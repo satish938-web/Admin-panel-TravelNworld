@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+/* import '@fortawesome/fontawesome-free/css/all.min.css'; */
+/* Hide default arrow */
+select {
+  -webkit-appearance: none;
+  /* Chrome, Safari, Edge */
+  -moz-appearance: none;
+  /* Firefox */
+  appearance: none;
+
+  /* Custom arrow using SVG */
+  background-image: url("data:image/svg+xml;utf8,<svg fill='gray' height='16' viewBox='0 0 24 24' width='16' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1em;
+
+  /* Space for the arrow */
+  padding-right: 2.5rem;
+}
+
+:root {
+  --primary-color: red;
+  /* Indigo */
+  --secondary-color: #ec4899;
+  /* Pink */
+}
