@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_BASE } from '../utils/api';
 import Swal from 'sweetalert2';
 import ProfileButton from '../components/ProfileButton';
 
@@ -9,7 +10,7 @@ const ContactInquiries = () => {
 
   const fetchInquiries = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/contacts', {
+      const response = await axios.get(`${API_BASE}/api/contacts`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       if (response.data.success) {
@@ -39,7 +40,7 @@ const ContactInquiries = () => {
 
     if (result.isConfirmed) {
       try {
-        await axios.delete(`http://localhost:5000/api/contacts/${id}`, {
+        await axios.delete(`${API_BASE}/api/contacts/${id}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         setInquiries(inquiries.filter(item => item._id !== id));

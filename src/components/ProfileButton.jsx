@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { FaUser } from "react-icons/fa";
 import axios from "axios";
+import { API_BASE } from "../utils/api";
 
 const ProfileButton = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [adminData, setAdminData] = useState({ adminName: "Admin User", role: "Administrator", imageUrl: "" });
   const dropdownRef = useRef(null);
-  const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
 
   useEffect(() => {
     fetchAdminProfile();

@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import ProfileButton from "./ProfileButton";
 import axios from "axios";
+import { API_BASE } from "../utils/api";
 
 export default function AdminDashboard() {
   const [bannerUrl, setBannerUrl] = useState("");
-  const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
 
   useEffect(() => {
     createParticles();

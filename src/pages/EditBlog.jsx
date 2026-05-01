@@ -5,6 +5,7 @@ import { HiArrowLeft } from 'react-icons/hi';
 import ProfileButton from '../components/ProfileButton';
 import MediaUploader from '../components/MediaUploader';
 import axios from 'axios';
+import { API_BASE } from '../utils/api';
 import { getS3Path } from '../utils/pathUtils';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from '../utils/toast';
@@ -21,8 +22,7 @@ const EditBlog = () => {
   useEffect(() => {
     const fetchBlog = async () => {
       try {
-        const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
-        const res = await axios.get(`${apiBase}/api/blogs/id/${id}`);
+        const res = await axios.get(`${API_BASE}/api/blogs/id/${id}`);
         const blog = res.data.data;
         setTitle(blog.title);
         setCoverImageUrl(blog.coverImage);
@@ -53,8 +53,7 @@ const EditBlog = () => {
         isPublished: visibility === 'Public'
       };
 
-      const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
-      await axios.put(`${apiBase}/api/blogs/${id}`, blogData, {
+      await axios.put(`${API_BASE}/api/blogs/${id}`, blogData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem("token")}`
         }

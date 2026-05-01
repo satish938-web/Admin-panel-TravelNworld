@@ -1,4 +1,5 @@
 import axios from "axios";
+import { API_BASE } from "./api";
 
 /**
  * Upload a file to S3 using a presigned URL (PUT)
@@ -7,7 +8,6 @@ import axios from "axios";
  * @returns {Promise<string>} - The S3 object key to be stored in DB
  */
 export const uploadToS3 = async (file, folder = "uploads", customFileName = null) => {
-  const apiBase = import.meta.env.VITE_API_BASE || "http://localhost:5000";
   const token = localStorage.getItem("token");
   
   const fileNameToUse = customFileName || file.name;
@@ -17,7 +17,7 @@ export const uploadToS3 = async (file, folder = "uploads", customFileName = null
     
     // 1. Get presigned URL and fileKey from backend
     const { data } = await axios.post(
-      `${apiBase}/api/upload/presigned-url`,
+      `${API_BASE}/api/upload/presigned-url`,
       {
         fileName: fileNameToUse,
         fileType: file.type,

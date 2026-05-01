@@ -6,6 +6,7 @@ import ProfileButton from '../components/ProfileButton';
 import MediaUploader from '../components/MediaUploader';
 import { getS3Path } from '../utils/pathUtils';
 import axios from 'axios';
+import { API_BASE } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '../utils/toast';
 
@@ -34,8 +35,7 @@ const CreateBlog = () => {
         isPublished: visibility === 'Public'
       };
 
-      const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
-      await axios.post(`${apiBase}/api/blogs`, blogData, {
+      await axios.post(`${API_BASE}/api/blogs`, blogData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem("token")}`
         }

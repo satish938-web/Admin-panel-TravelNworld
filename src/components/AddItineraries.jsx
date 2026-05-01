@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
+import { API_BASE } from "../utils/api";
 import {
   HiOutlineViewBoards, HiOutlineGlobe, HiOutlineLocationMarker,
   HiOutlineCalendar, HiOutlineTag, HiOutlinePhotograph, HiOutlineMap,
@@ -212,7 +213,6 @@ const StatCard = ({ label, value, color }) => (
 
 const AddItineraries = ({ onSubmit, initialData = null }) => {
   const isEditMode = Boolean(initialData?.slug);
-  const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
 
   const [domesticDestinations,       setDomesticDestinations]       = useState([]);
   const [internationalDestinations,  setInternationalDestinations]  = useState([]);

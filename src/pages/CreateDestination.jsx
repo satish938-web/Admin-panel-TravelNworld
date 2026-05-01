@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { HiGlobeAlt, HiLocationMarker, HiPhotograph, HiPencil, HiTrash, HiPlus } from 'react-icons/hi';
 import ProfileButton from '../components/ProfileButton';
 import axios from 'axios';
+import { API_BASE } from '../utils/api';
 import { getS3Path } from '../utils/pathUtils';
 import MediaUploader from '../components/MediaUploader';
 
@@ -110,7 +111,6 @@ const StatCard = ({ label, value, color }) => (
 
 /* ─── Main Component ─────────────────────────────────────────────────────── */
 const CreateDestination = () => {
-  const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000';
 
   /* form state */
   const [destinationName, setDestinationName] = useState('');

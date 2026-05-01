@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_BASE } from '../utils/api';
 import Swal from 'sweetalert2';
 import ProfileButton from './ProfileButton';
 
@@ -16,13 +17,13 @@ const Enquiry = () => {
       const headers = { Authorization: `Bearer ${token}` };
 
       // Fetch Home Page Enquiries
-      const homeRes = await axios.get('http://localhost:5000/api/enquiries', { headers });
+      const homeRes = await axios.get(`${API_BASE}/api/enquiries`, { headers });
       if (homeRes.data.success) {
         setHomeEnquiries(homeRes.data.data);
       }
 
       // Fetch Contact Us Inquiries
-      const contactRes = await axios.get('http://localhost:5000/api/contacts', { headers });
+      const contactRes = await axios.get(`${API_BASE}/api/contacts`, { headers });
       if (contactRes.data.success) {
         setContactEnquiries(contactRes.data.data);
       }
@@ -51,7 +52,7 @@ const Enquiry = () => {
     if (result.isConfirmed) {
       try {
         const token = localStorage.getItem('token');
-        const endpoint = type === 'home' ? `http://localhost:5000/api/enquiries/${id}` : `http://localhost:5000/api/contacts/${id}`;
+        const endpoint = type === 'home' ? `${API_BASE}/api/enquiries/${id}` : `${API_BASE}/api/contacts/${id}`;
 
         await axios.delete(endpoint, {
           headers: { Authorization: `Bearer ${token}` }

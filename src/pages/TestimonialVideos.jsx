@@ -4,6 +4,7 @@ import ProfileButton from '../components/ProfileButton';
 import MediaUploader from '../components/MediaUploader';
 import axios from 'axios';
 import { getS3Path } from '../utils/pathUtils';
+import { API_BASE } from '../utils/api';
 
 const TestimonialVideos = () => {
   const fileInputRef = useRef(null);
@@ -15,7 +16,7 @@ const TestimonialVideos = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
-  const API_BASE = 'http://localhost:5000/api/testimonials';
+  const API_ENDPOINT = `${API_BASE}/api/testimonials`;
 
   useEffect(() => {
     fetchTestimonials();
@@ -23,7 +24,7 @@ const TestimonialVideos = () => {
 
   const fetchTestimonials = async () => {
     try {
-      const res = await axios.get(API_BASE);
+      const res = await axios.get(API_ENDPOINT);
       // Filter only video testimonials
       const videoData = res.data.data.filter(t => t.type === 'video');
       setTestimonials(videoData);
@@ -52,7 +53,7 @@ const TestimonialVideos = () => {
         videoUrl: videoUrl
       };
 
-      await axios.post(API_BASE, payload, {
+      await axios.post(API_ENDPOINT, payload, {
         headers: { 
           'Authorization': `Bearer ${token}`
         }
@@ -76,7 +77,7 @@ const TestimonialVideos = () => {
     if (window.confirm("Are you sure you want to delete this testimonial?")) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`${API_BASE}/${id}`, {
+        await axios.delete(`${API_ENDPOINT}/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         fetchTestimonials();

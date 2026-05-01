@@ -11,7 +11,7 @@ import {
 import ProfileButton from "./ProfileButton";
 import MediaUploader from "./MediaUploader";
 import { getS3Path, sanitize } from "../utils/pathUtils";
-import { getImageUrl } from "../utils/api";
+import { getImageUrl, API_BASE, PUBLIC_FRONTEND_URL } from "../utils/api";
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 
@@ -217,8 +217,7 @@ const AgentContentManager = () => {
   const fetchAgents = async () => {
     try {
       const token = localStorage.getItem("token");
-      const apiBase = import.meta.env.VITE_API_BASE || "";
-      const res = await axios.get(`${apiBase}/api/agents`, {
+      const res = await axios.get(`${API_BASE}/api/agents`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setAgents(res.data.data || []);
@@ -239,8 +238,7 @@ const AgentContentManager = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const apiBase = import.meta.env.VITE_API_BASE || "";
-      const res = await axios.get(`${apiBase}/api/agents/${id}`, {
+      const res = await axios.get(`${API_BASE}/api/agents/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = res.data.data;
@@ -267,8 +265,7 @@ const AgentContentManager = () => {
   const fetchItineraries = async (agentId) => {
     setItinerariesLoading(true);
     try {
-      const apiBase = import.meta.env.VITE_API_BASE || "";
-      const res = await axios.get(`${apiBase}/api/agent-itineraries?agentId=${agentId}`);
+      const res = await axios.get(`${API_BASE}/api/agent-itineraries?agentId=${agentId}`);
       setItineraries(res.data.data || []);
     } catch (err) {
       console.error("Error fetching itineraries", err);
@@ -290,9 +287,8 @@ const AgentContentManager = () => {
     setPublicReviewsLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const apiBase = import.meta.env.VITE_API_BASE || "";
       // Since our API currently gets ALL reviews, we filter here or update API
-      const res = await axios.get(`${apiBase}/api/agents/all/reviews`, {
+      const res = await axios.get(`${API_BASE}/api/agents/all/reviews`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       // Filter for this specific agent
@@ -319,8 +315,7 @@ const AgentContentManager = () => {
     if (result.isConfirmed) {
       try {
         const token = localStorage.getItem("token");
-        const apiBase = import.meta.env.VITE_API_BASE || "";
-        await axios.delete(`${apiBase}/api/agents/reviews/${reviewId}`, {
+        await axios.delete(`${API_BASE}/api/agents/reviews/${reviewId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         toast.success("Public review removed!");
@@ -357,11 +352,9 @@ const AgentContentManager = () => {
     setSaving(true);
     try {
       const token = localStorage.getItem("token");
-      const apiBase = import.meta.env.VITE_API_BASE || "";
-
       let payload = { [selectedSection]: agentData[selectedSection] };
 
-      await axios.put(`${apiBase}/api/agents/${selectedAgentId}`, payload, {
+      await axios.put(`${API_BASE}/api/agents/${selectedAgentId}`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
       fetchAgentDetails(selectedAgentId);
@@ -498,8 +491,7 @@ const AgentContentManager = () => {
                             if (window.confirm("Delete this itinerary for this agent?")) {
                               try {
                                 const token = localStorage.getItem("token");
-                                const apiBase = import.meta.env.VITE_API_BASE || "";
-                                await axios.delete(`${apiBase}/api/agent-itineraries/${it.slug}`, {
+                                await axios.delete(`${API_BASE}/api/agent-itineraries/${it.slug}`, {
                                   headers: { Authorization: `Bearer ${token}` }
                                 });
                                 toast.success("Itinerary deleted");
@@ -871,7 +863,7 @@ const AgentContentManager = () => {
                 <>
                   {selectedAgentId && (
                     <a
-                      href={`http://localhost:5173/verified-transport-details/${selectedAgentId}`}
+                      href={`${PUBLIC_FRONTEND_URL}/verified-transport-details/${selectedAgentId}`}
                       target="_blank"
                       rel="noreferrer"
                       className="flex items-center gap-2 px-6 py-4 bg-white text-slate-900 font-bold rounded-2xl hover:bg-slate-50 transition-all border border-slate-200 shadow-sm"
@@ -1029,8 +1021,7 @@ const AgentContentManager = () => {
                 onClick={async () => {
                   try {
                     const token = localStorage.getItem("token");
-                    const apiBase = import.meta.env.VITE_API_BASE || "";
-                    await axios.put(`${apiBase}/api/agent-itineraries/${selectedItinerary.slug}`, selectedItinerary, {
+                    await axios.put(`${API_BASE}/api/agent-itineraries/${selectedItinerary.slug}`, selectedItinerary, {
                       headers: { Authorization: `Bearer ${token}` }
                     });
                     toast.success("Itinerary updated successfully!");

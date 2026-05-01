@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { HiDocumentText, HiSave, HiPencil } from 'react-icons/hi';
 import ProfileButton from '../components/ProfileButton';
 import axios from 'axios';
+import { API_BASE } from '../utils/api';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 
@@ -13,7 +14,7 @@ const CancellationPolicy = () => {
   useEffect(() => {
     const fetchCancellationPolicy = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/policies`, {
+        const res = await axios.get(`${API_BASE}/api/policies`, {
           params: { type: 'cancellation' }
         });
         setPolicyContent(res.data.data.content || '');
@@ -26,7 +27,7 @@ const CancellationPolicy = () => {
 
   const handleSave = async () => {
     try {
-      await axios.post('http://localhost:5000/api/policies', {
+      await axios.post(`${API_BASE}/api/policies`, {
         type: 'cancellation',
         category: 'General',
         destination: 'General',

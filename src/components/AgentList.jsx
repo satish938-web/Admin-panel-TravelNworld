@@ -4,6 +4,7 @@ import { HiPencil, HiTrash, HiEye, HiCheckCircle, HiXCircle, HiExternalLink } fr
 import { toast } from "../utils/toast";
 import ProfileButton from "./ProfileButton";
 import axios from "axios";
+import { API_BASE, PUBLIC_FRONTEND_URL } from "../utils/api";
 import MediaUploader from "./MediaUploader";
 import { getS3Path } from "../utils/pathUtils";
 
@@ -148,8 +149,7 @@ const AgentList = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const apiBase = import.meta.env.VITE_API_BASE || "";
-      const res = await axios.get(`${apiBase}/api/agents`, {
+      const res = await axios.get(`${API_BASE}/api/agents`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setAgents(res.data.data || []);
@@ -165,9 +165,8 @@ const AgentList = () => {
   const handleVerify = async (agentId, currentVerified) => {
     try {
       const token = localStorage.getItem("token");
-      const apiBase = import.meta.env.VITE_API_BASE || "";
       await axios.put(
-        `${apiBase}/api/agents/${agentId}`,
+        `${API_BASE}/api/agents/${agentId}`,
         { isVerified: !currentVerified },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -263,7 +262,6 @@ const AgentList = () => {
     setIsSaving(true);
     try {
       const token = localStorage.getItem("token");
-      const apiBase = import.meta.env.VITE_API_BASE || "";
       
       // Send all fields managed in the modal
       const payload = {
@@ -274,7 +272,7 @@ const AgentList = () => {
         ),
       };
 
-      await axios.put(`${apiBase}/api/agents/${selectedAgent._id}`, payload, {
+      await axios.put(`${API_BASE}/api/agents/${selectedAgent._id}`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
       await fetchAgents();
@@ -293,8 +291,7 @@ const AgentList = () => {
     if (!window.confirm("Delete this agent?")) return;
     try {
       const token = localStorage.getItem("token");
-      const apiBase = import.meta.env.VITE_API_BASE || "";
-      await axios.delete(`${apiBase}/api/agents/${agentId}`, {
+      await axios.delete(`${API_BASE}/api/agents/${agentId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       await fetchAgents();
@@ -384,7 +381,7 @@ const AgentList = () => {
                   <td className="py-3 px-4">{agent.phone}</td>
                   <td className="py-3 px-4 flex gap-3">
                     <a
-                      href={`http://localhost:5173/verified-transport-details/${agent._id}`}
+                      href={`${PUBLIC_FRONTEND_URL}/verified-transport-details/${agent._id}`}
                       target="_blank"
                       rel="noreferrer"
                       className="text-blue-600 hover:text-blue-800 p-2 rounded"
@@ -429,7 +426,7 @@ const AgentList = () => {
                   <div className="text-sm text-gray-700"><strong>Phone:</strong> {agent.phone}</div>
                   <div className="flex gap-4 mt-2">
                     <a
-                      href={`http://localhost:5173/verified-transport-details/${agent._id}`}
+                      href={`${PUBLIC_FRONTEND_URL}/verified-transport-details/${agent._id}`}
                       target="_blank"
                       rel="noreferrer"
                       className="text-blue-600 hover:text-blue-800 p-2 rounded"

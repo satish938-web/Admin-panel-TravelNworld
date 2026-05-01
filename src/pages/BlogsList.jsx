@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { HiSearch, HiTrash, HiPencil, HiEye, HiPlus, HiCalendar } from 'react-icons/hi';
 import ProfileButton from '../components/ProfileButton';
 import axios from 'axios';
+import { API_BASE } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 
 const BlogsList = () => {
@@ -17,7 +18,7 @@ const BlogsList = () => {
 
   const fetchBlogs = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/blogs?isAdmin=true');
+      const response = await axios.get(`${API_BASE}/api/blogs?isAdmin=true`);
       setBlogs(response.data.data);
       setLoading(false);
     } catch (error) {
@@ -29,7 +30,7 @@ const BlogsList = () => {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this blog?")) {
       try {
-        await axios.delete(`http://localhost:5000/api/blogs/${id}`, {
+        await axios.delete(`${API_BASE}/api/blogs/${id}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem("token")}`
           }

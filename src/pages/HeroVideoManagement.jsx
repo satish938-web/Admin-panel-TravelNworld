@@ -3,6 +3,7 @@ import { HiVideoCamera, HiUpload, HiTrash, HiCheckCircle, HiXCircle } from 'reac
 import ProfileButton from '../components/ProfileButton';
 import MediaUploader from '../components/MediaUploader';
 import { getS3Path } from '../utils/pathUtils';
+import { API_BASE } from '../utils/api';
 
 const HeroVideoManagement = () => {
   const [selectedPage, setSelectedPage] = useState('home');
@@ -22,9 +23,8 @@ const HeroVideoManagement = () => {
     const fetchVideos = async () => {
       try {
         const token = localStorage.getItem("token");
-        const apiBase = import.meta.env.VITE_API_BASE || "http://localhost:5000";
 
-        const response = await fetch(`${apiBase}/api/hero-videos/all`, {
+        const response = await fetch(`${API_BASE}/api/hero-videos/all`, {
           headers: {
             "Authorization": `Bearer ${token}`,
           },
@@ -56,13 +56,12 @@ const HeroVideoManagement = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      const apiBase = import.meta.env.VITE_API_BASE || "http://localhost:5000";
       
       const pageTitle = selectedPage.charAt(0).toUpperCase() + selectedPage.slice(1);
       const pageSpecificVideos = uploadedVideos.filter(v => v.page === pageTitle);
 
       // Call backend API to save hero video to database
-      const response = await fetch(`${apiBase}/api/hero-videos`, {
+      const response = await fetch(`${API_BASE}/api/hero-videos`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -104,9 +103,8 @@ const HeroVideoManagement = () => {
     if (window.confirm("Are you sure you want to delete this video?")) {
       try {
         const token = localStorage.getItem("token");
-        const apiBase = import.meta.env.VITE_API_BASE || "http://localhost:5000";
 
-        const response = await fetch(`${apiBase}/api/hero-videos/${id}`, {
+        const response = await fetch(`${API_BASE}/api/hero-videos/${id}`, {
           method: "DELETE",
           headers: {
             "Authorization": `Bearer ${token}`,
@@ -129,11 +127,10 @@ const HeroVideoManagement = () => {
   const toggleVisibility = async (id) => {
     try {
       const token = localStorage.getItem("token");
-      const apiBase = import.meta.env.VITE_API_BASE || "http://localhost:5000";
       const video = uploadedVideos.find(v => v.id === id);
       const newIsActive = video.visibility === 'Public' ? false : true;
 
-      const response = await fetch(`${apiBase}/api/hero-videos/${id}`, {
+      const response = await fetch(`${API_BASE}/api/hero-videos/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
