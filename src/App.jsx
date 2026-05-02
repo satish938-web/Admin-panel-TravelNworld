@@ -33,6 +33,7 @@ import TermsManagement from "./pages/TermsManagement";
 import PaymentTerms from "./pages/PaymentTerms";
 import CancellationPolicy from "./pages/CancellationPolicy";
 import ReviewManagement from "./pages/ReviewManagement";
+import PolicyManager from "./pages/PolicyManager";
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(
@@ -129,6 +130,8 @@ const App = () => {
                     <Route path="/edit-blog/:id" element={<EditBlog />} />
                     <Route path="/blogs-list" element={<BlogsList />} />
                     <Route path="/terms-management" element={<TermsManagement />} />
+                    <Route path="/privacy-policy" element={<PolicyManager type="privacy" />} />
+                    <Route path="/terms-of-use" element={<PolicyManager type="terms" />} />
                     <Route path="/payment-terms" element={<PaymentTerms />} />
                     <Route path="/cancellation-policy" element={<CancellationPolicy />} />
                     <Route path="/reviews" element={<ReviewManagement />} />

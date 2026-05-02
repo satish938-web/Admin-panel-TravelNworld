@@ -3,7 +3,7 @@
 export const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5000";
 export const PUBLIC_FRONTEND_URL = import.meta.env.VITE_PUBLIC_FRONTEND_URL || "http://localhost:5173";
 
-export const S3_BASE_URL = "https://travel-n-wolrd.s3.ap-south-1.amazonaws.com";
+export const S3_BASE_URL = "https://media.travelnworld.com";
 
 /**
  * Transforms a source string (S3 key or URL) into a full public URL.

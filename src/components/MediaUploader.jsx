@@ -19,6 +19,7 @@ const MediaUploader = ({
   maxFiles = 10,
   folder = "media", // New prop
   baseFileName = "", // New prop: used to rename files based on title/name
+  accept = "image/*,video/*", // New prop: to restrict file types
 }) => {
   const [mediaItems, setMediaItems] = useState(() =>
     existingUrls
@@ -38,10 +39,23 @@ const MediaUploader = ({
   );
 
   const uploadFiles = async (rawFiles) => {
-    const allowed = Array.from(rawFiles).slice(0, maxFiles - mediaItems.length);
+    // Filter files based on accept prop if it's not the default
+    let filteredFiles = Array.from(rawFiles);
+    if (accept !== "image/*,video/*") {
+      const isOnlyImages = accept.includes("image") && !accept.includes("video");
+      const isOnlyVideos = accept.includes("video") && !accept.includes("image");
+      
+      if (isOnlyImages) {
+        filteredFiles = filteredFiles.filter(f => f.type.startsWith("image/"));
+      } else if (isOnlyVideos) {
+        filteredFiles = filteredFiles.filter(f => f.type.startsWith("video/"));
+      }
+    }
+
+    const allowed = filteredFiles.slice(0, maxFiles - mediaItems.length);
     if (allowed.length === 0) return;
 
-    // Add placeholder items instantly so user sees progress
+    const currentCount = mediaItems.length;
     const placeholders = allowed.map((f) => ({
       url: URL.createObjectURL(f),
       status: "uploading",
@@ -81,14 +95,15 @@ const MediaUploader = ({
       // Map the results back to the state in the correct order
       setMediaItems(prev => {
         const updated = [...prev];
-        // The last 'allowed.length' items are the ones we just added as placeholders
-        const startIdx = updated.length - allowed.length;
         uploadResults.forEach(res => {
-          updated[startIdx + res.index] = {
-            url: res.url,
-            status: res.status,
-            isVideo: res.isVideo
-          };
+          const targetIdx = currentCount + res.index;
+          if (updated[targetIdx]) {
+            updated[targetIdx] = {
+              url: res.url,
+              status: res.status,
+              isVideo: res.isVideo
+            };
+          }
         });
         return updated;
       });
@@ -142,7 +157,7 @@ const MediaUploader = ({
             ref={inputRef}
             type="file"
             multiple
-            accept="image/*,video/*"
+            accept={accept}
             className="hidden"
             onChange={(e) => uploadFiles(e.target.files)}
           />

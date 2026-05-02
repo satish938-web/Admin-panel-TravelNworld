@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import Swal from "sweetalert2";
 import { HiOutlineTrash, HiOutlinePencilSquare, HiOutlineInformationCircle, HiXMark } from "react-icons/hi2";
-import { HiSave, HiOutlineChatAlt2, HiStar, HiTrash, HiPencil, HiExternalLink } from "react-icons/hi";
+import { HiSave, HiOutlineChatAlt2, HiStar, HiTrash, HiPencil, HiExternalLink, HiUserGroup, HiTrendingUp, HiFilter } from "react-icons/hi";
 import { toast } from "../utils/toast";
 import { 
   FaSuitcase, FaClock, FaMapMarkerAlt, FaUser, FaImage, 
@@ -207,6 +208,8 @@ const AgentContentManager = () => {
   const [selectedItinerary, setSelectedItinerary] = useState(null);
   const [publicReviews, setPublicReviews] = useState([]);
   const [publicReviewsLoading, setPublicReviewsLoading] = useState(false);
+  const [showReviewEditModal, setShowReviewEditModal] = useState(false);
+  const [editingReview, setEditingReview] = useState(null);
 
   useEffect(() => {
     fetchAgents();
@@ -278,7 +281,7 @@ const AgentContentManager = () => {
     if (selectedAgentId && selectedSection === "tourPackages") {
       fetchItineraries(selectedAgentId);
     }
-    if (selectedAgentId && selectedSection === "reviews") {
+    if (selectedAgentId && selectedSection === "reviewsList") {
       fetchPublicReviews(selectedAgentId);
     }
   }, [selectedAgentId, selectedSection]);
@@ -545,138 +548,222 @@ const AgentContentManager = () => {
         );
       case "reviewsList":
         const reviews = Array.isArray(agentData.reviewsList) ? agentData.reviewsList : [];
-        return (
-          <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-black text-slate-900">Manage Reviews & Ratings</h3>
-              <button 
-                onClick={() => {
-                  const newReviews = [{ name: "", rating: 5, comment: "", date: new Date().toISOString() }, ...reviews];
-                  handleUpdateField("reviewsList", newReviews);
-                }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
-              >
-                + Add New Review
-              </button>
-            </div>
+        
+        // Calculate stats for public reviews
+        const publicStats = {
+          total: publicReviews.length,
+          avg: publicReviews.length > 0 
+            ? (publicReviews.reduce((acc, curr) => acc + curr.rating, 0) / publicReviews.length).toFixed(1)
+            : "0.0",
+          fiveStars: publicReviews.filter(r => r.rating === 5).length
+        };
 
-            <div className="space-y-6">
-              {reviews.map((rev, idx) => (
-                <div key={idx} className="p-6 bg-slate-50 rounded-2xl border border-slate-200 relative group">
-                  <button 
-                    onClick={() => {
-                      const filtered = reviews.filter((_, i) => i !== idx);
-                      handleUpdateField("reviewsList", filtered);
-                    }}
-                    className="absolute top-4 right-4 text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all"
-                  >
-                    Delete
-                  </button>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Reviewer Name</label>
-                      <input
-                        type="text"
-                        value={rev.name || ""}
+        return (
+          <div className="space-y-10 animate-fadeIn">
+            {/* --- Manual Reviews Section --- */}
+            <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full -mr-16 -mt-16 opacity-50"></div>
+              <div className="flex justify-between items-center mb-8 relative z-10">
+                <div>
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">Manual Reviews</h3>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Directly added by administrator</p>
+                </div>
+                <button 
+                  onClick={() => {
+                    const newReviews = [{ name: "", rating: 5, comment: "", date: new Date().toISOString() }, ...reviews];
+                    handleUpdateField("reviewsList", newReviews);
+                  }}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20 active:scale-95 flex items-center gap-2"
+                >
+                  <span className="text-lg">+</span> Add Review
+                </button>
+              </div>
+
+              <div className="space-y-6 relative z-10">
+                {reviews.map((rev, idx) => (
+                  <div key={idx} className="p-6 bg-slate-50/50 rounded-3xl border border-slate-100 relative group hover:border-blue-200 transition-all">
+                    <button 
+                      onClick={() => {
+                        const filtered = reviews.filter((_, i) => i !== idx);
+                        handleUpdateField("reviewsList", filtered);
+                      }}
+                      className="absolute top-4 right-4 w-8 h-8 rounded-xl bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                    >
+                      <HiTrash size={16} />
+                    </button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Reviewer Name</label>
+                        <input
+                          type="text"
+                          value={rev.name || ""}
+                          onChange={(e) => {
+                            const updated = [...reviews];
+                            updated[idx].name = e.target.value;
+                            handleUpdateField("reviewsList", updated);
+                          }}
+                          className="w-full px-5 py-3 bg-white border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700"
+                          placeholder="e.g. John Doe"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Rating</label>
+                        <div className="relative">
+                          <select
+                            value={rev.rating || 5}
+                            onChange={(e) => {
+                              const updated = [...reviews];
+                              updated[idx].rating = parseInt(e.target.value);
+                              handleUpdateField("reviewsList", updated);
+                            }}
+                            className="w-full px-5 py-3 bg-white border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 appearance-none cursor-pointer"
+                          >
+                            {[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{n} Stars</option>)}
+                          </select>
+                          <HiStar className="absolute right-4 top-1/2 -translate-y-1/2 text-orange-400 pointer-events-none" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Review Content</label>
+                      <textarea
+                        value={rev.comment || ""}
                         onChange={(e) => {
                           const updated = [...reviews];
-                          updated[idx].name = e.target.value;
+                          updated[idx].comment = e.target.value;
                           handleUpdateField("reviewsList", updated);
                         }}
-                        className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="e.g. John Doe"
+                        className="w-full px-5 py-3 bg-white border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 min-h-[100px] text-slate-600 font-medium"
+                        placeholder="Write the review content here..."
                       />
                     </div>
-                    <div>
-                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Rating (1-5)</label>
-                      <select
-                        value={rev.rating || 5}
-                        onChange={(e) => {
-                          const updated = [...reviews];
-                          updated[idx].rating = parseInt(e.target.value);
-                          handleUpdateField("reviewsList", updated);
-                        }}
-                        className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        {[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{n} Stars</option>)}
-                      </select>
-                    </div>
                   </div>
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Review Comment</label>
-                    <textarea
-                      value={rev.comment || ""}
-                      onChange={(e) => {
-                        const updated = [...reviews];
-                        updated[idx].comment = e.target.value;
-                        handleUpdateField("reviewsList", updated);
-                      }}
-                      className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]"
-                      placeholder="Write the review content here..."
-                    />
+                ))}
+                {reviews.length === 0 && (
+                  <div className="text-center py-12 bg-slate-50/50 rounded-3xl border-2 border-dashed border-slate-100 flex flex-col items-center gap-3">
+                    <HiOutlineChatAlt2 className="text-slate-200" size={40} />
+                    <p className="text-slate-400 text-sm font-bold uppercase tracking-widest">No manual reviews added</p>
                   </div>
-                </div>
-              ))}
-              {reviews.length === 0 && (
-                <div className="text-center py-10 text-slate-400 font-medium">No reviews added yet. Click "+ Add New Review" to begin.</div>
-              )}
+                )}
+              </div>
             </div>
 
-            {/* Public User Reviews Section */}
-            <div className="mt-12 pt-8 border-t-2 border-slate-100">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600">
-                  <HiOutlineChatAlt2 size={20} />
-                </div>
+            {/* --- Public User Reviews Section --- */}
+            <div className="pt-10">
+              <div className="flex flex-col lg:flex-row lg:items-end justify-between mb-8 gap-6">
                 <div>
-                  <h3 className="text-lg font-black text-slate-900">Public User Reviews</h3>
-                  <p className="text-xs text-slate-400 font-medium">Reviews submitted by visitors on the public profile</p>
+                  <div className="flex items-center gap-4 mb-2">
+                    <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-orange-200">
+                      <HiOutlineChatAlt2 size={24} />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-black text-slate-900 tracking-tight">Public Feedback</h3>
+                      <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-0.5">Reviews submitted via public profile</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Local Stats for Public Reviews */}
+                <div className="flex gap-4">
+                  <div className="bg-white px-5 py-3 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
+                    <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
+                      <HiUserGroup size={16} />
+                    </div>
+                    <div>
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Total</p>
+                      <p className="text-sm font-black text-slate-900">{publicStats.total}</p>
+                    </div>
+                  </div>
+                  <div className="bg-white px-5 py-3 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
+                    <div className="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center text-orange-600">
+                      <HiStar size={16} />
+                    </div>
+                    <div>
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Rating</p>
+                      <p className="text-sm font-black text-slate-900">{publicStats.avg}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {publicReviewsLoading ? (
-                <div className="flex items-center justify-center py-10"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div></div>
+                <div className="flex flex-col items-center justify-center py-20 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm">
+                  <div className="w-12 h-12 border-4 border-orange-100 border-t-orange-600 rounded-full animate-spin mb-4"></div>
+                  <p className="text-slate-400 font-black uppercase tracking-[0.2em] text-[10px]">Loading Feedback...</p>
+                </div>
               ) : publicReviews.length === 0 ? (
-                <div className="bg-slate-50 rounded-2xl p-10 text-center border border-slate-100">
-                  <p className="text-slate-400 text-sm font-medium">No public reviews found for this agent yet.</p>
+                <div className="bg-white rounded-[2.5rem] p-16 text-center border-2 border-dashed border-slate-100">
+                  <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <HiOutlineChatAlt2 className="text-slate-200" size={32} />
+                  </div>
+                  <h3 className="text-xl font-black text-slate-900 mb-2">No Public Reviews</h3>
+                  <p className="text-slate-400 max-w-xs mx-auto text-xs font-bold uppercase tracking-widest">Start by sharing your profile with customers!</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {publicReviews.map((rev) => (
-                    <div key={rev._id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-start justify-between group hover:border-orange-200 transition-all">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="font-bold text-slate-900 text-sm">{rev.userName}</span>
-                          <div className="flex items-center gap-0.5 px-2 py-0.5 bg-orange-50 rounded-md">
-                            <HiStar className="text-orange-500" size={10} />
-                            <span className="text-orange-600 font-black text-[10px]">{rev.rating}</span>
+                    <div key={rev._id} className="group bg-white p-7 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-500 relative flex flex-col">
+                      <div className="flex items-start justify-between mb-6">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-300 font-black text-lg border border-slate-100 group-hover:bg-orange-600 group-hover:text-white group-hover:border-transparent transition-all duration-300">
+                            {rev.userName.charAt(0)}
                           </div>
-                          <span className="text-[10px] text-slate-400 font-medium">
-                            {new Date(rev.createdAt).toLocaleDateString()}
-                          </span>
+                          <div>
+                            <h4 className="font-black text-slate-900 text-sm tracking-tight uppercase">{rev.userName}</h4>
+                            <div className="flex items-center gap-2 mt-1">
+                              <div className="flex gap-0.5">
+                                {[...Array(5)].map((_, i) => (
+                                  <HiStar key={i} size={10} className={i < rev.rating ? "text-orange-400" : "text-slate-100"} />
+                                ))}
+                              </div>
+                              <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
+                                {new Date(rev.createdAt).toLocaleDateString("en-US", { day: 'numeric', month: 'short' })}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                        <p className="text-slate-600 text-xs italic">"{rev.comment}"</p>
-                        {rev.images && rev.images.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mt-3">
-                            {rev.images.map((img, idx) => (
-                              <img 
-                                key={idx} 
-                                src={getImageUrl(img)} 
-                                alt="Review" 
-                                className="w-10 h-10 object-cover rounded-lg border border-slate-100"
-                              />
-                            ))}
-                          </div>
-                        )}
+                        <div className="flex gap-2">
+                           <button 
+                            onClick={() => {
+                              setEditingReview(rev);
+                              setShowReviewEditModal(true);
+                            }}
+                            className="w-9 h-9 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center hover:bg-orange-600 hover:text-white transition-all shadow-sm"
+                            title="Edit Review"
+                          >
+                            <HiPencil size={16} />
+                          </button>
+                          <button 
+                            onClick={() => deletePublicReview(rev._id)}
+                            className="w-9 h-9 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm"
+                            title="Delete Review"
+                          >
+                            <HiTrash size={16} />
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                        <button 
-                          onClick={() => deletePublicReview(rev._id)}
-                          className="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"
-                          title="Delete Public Review"
-                        >
-                          <HiTrash size={16} />
-                        </button>
+
+                      <div className="flex-1">
+                        <p className="text-slate-600 text-[13px] italic leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity">
+                          "{rev.comment}"
+                        </p>
+                      </div>
+
+                      {rev.images && rev.images.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-5">
+                          {rev.images.map((img, idx) => (
+                            <img 
+                              key={idx} 
+                              src={getImageUrl(img)} 
+                              alt="Review" 
+                              className="w-12 h-12 object-cover rounded-xl border border-slate-100 hover:scale-105 transition-transform cursor-pointer"
+                            />
+                          ))}
+                        </div>
+                      )}
+                      
+                      <div className="mt-6 w-full h-1 bg-slate-50 rounded-full overflow-hidden">
+                        <div className="w-0 group-hover:w-full h-full bg-gradient-to-r from-orange-400 to-red-500 transition-all duration-1000"></div>
                       </div>
                     </div>
                   ))}
@@ -1032,6 +1119,98 @@ const AgentContentManager = () => {
                 className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:bg-blue-700 transition-all shadow-xl shadow-blue-200 active:scale-95"
               >
                 Update Itinerary
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Public Review Edit Modal */}
+      {showReviewEditModal && editingReview && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-xl shadow-2xl overflow-hidden border border-slate-100 animate-fadeIn">
+            <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-orange-50/30">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-orange-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-orange-200">
+                  <HiOutlineChatAlt2 size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight">Edit Public Review</h3>
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Update visitor feedback</p>
+                </div>
+              </div>
+              <button onClick={() => setShowReviewEditModal(false)} className="p-3 hover:bg-white rounded-2xl transition-all shadow-sm border border-transparent hover:border-slate-200 text-slate-400 hover:text-slate-900">
+                <HiXMark size={24} />
+              </button>
+            </div>
+
+            <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">User Name</label>
+                  <input
+                    type="text"
+                    value={editingReview.userName}
+                    onChange={(e) => setEditingReview({ ...editingReview, userName: e.target.value })}
+                    className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 font-bold text-slate-700"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Rating</label>
+                  <select
+                    value={editingReview.rating}
+                    onChange={(e) => setEditingReview({ ...editingReview, rating: parseInt(e.target.value) })}
+                    className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 font-bold text-slate-700 appearance-none cursor-pointer"
+                  >
+                    {[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{n} Stars</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Review Comment</label>
+                <textarea
+                  value={editingReview.comment}
+                  onChange={(e) => setEditingReview({ ...editingReview, comment: e.target.value })}
+                  rows={4}
+                  className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 font-medium text-slate-600 leading-relaxed"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Review Images</label>
+                <div className="p-1">
+                  <MediaUploader
+                    label="Drop or Select Images"
+                    maxFiles={10}
+                    accept="image/*"
+                    existingUrls={editingReview.images || []}
+                    onChange={(urls) => setEditingReview({ ...editingReview, images: urls })}
+                    folder={getS3Path.agentGallery(agentName)}
+                    baseFileName={`${editingReview.userName}-review`}
+                  />
+                </div>
+                <p className="text-[9px] text-slate-400 font-medium italic text-center">Manage photos shared by this user.</p>
+              </div>
+            </div>
+
+            <div className="p-8 bg-slate-50/50 border-t border-slate-100 flex justify-end gap-4">
+              <button onClick={() => setShowReviewEditModal(false)} className="px-6 py-3 text-slate-400 font-black uppercase tracking-widest text-[10px] hover:text-slate-900 transition-colors">Cancel</button>
+              <button
+                onClick={async () => {
+                  try {
+                    const token = localStorage.getItem("token");
+                    await axios.put(`${API_BASE}/api/agents/reviews/${editingReview._id}`, editingReview, {
+                      headers: { Authorization: `Bearer ${token}` }
+                    });
+                    toast.success("Review updated successfully!");
+                    setShowReviewEditModal(false);
+                    fetchPublicReviews(selectedAgentId);
+                  } catch (e) { toast.error("Error updating review"); }
+                }}
+                className="px-10 py-4 bg-orange-600 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:bg-orange-700 transition-all shadow-xl shadow-orange-200 active:scale-95"
+              >
+                Update Review
               </button>
             </div>
           </div>

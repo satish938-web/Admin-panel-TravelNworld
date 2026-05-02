@@ -19,6 +19,7 @@ const HomeTopBanner = () => {
     endDate: "",
   });
   const [image, setImage] = useState("");
+  const [images, setImages] = useState([]); // Support multiple images
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -40,6 +41,7 @@ const HomeTopBanner = () => {
     setShowForm(false);
     setForm({ title: "", desc: "", startDate: "", endDate: "" });
     setImage("");
+    setImages([]);
     setEditingId(null);
   };
 
@@ -71,13 +73,29 @@ const HomeTopBanner = () => {
     setSaving(true);
     try {
       if (editingId) {
+        const payload = {
+          ...form,
+          position,
+          isActive: true,
+          imageUrl: images[0] || image
+        };
         await axios.put(`${apiBase}/api/banners/${editingId}`, payload, {
           headers: { Authorization: `Bearer ${token}` }
         });
       } else {
-        await axios.post(`${apiBase}/api/banners`, payload, {
-          headers: { Authorization: `Bearer ${token}` }
+        // If multiple images, create multiple banners
+        const uploadPromises = images.map(imgUrl => {
+          const payload = {
+            ...form,
+            position,
+            isActive: true,
+            imageUrl: imgUrl
+          };
+          return axios.post(`${apiBase}/api/banners`, payload, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
         });
+        await Promise.all(uploadPromises);
       }
 
       resetForm();
@@ -114,6 +132,7 @@ const HomeTopBanner = () => {
       endDate: b.endDate?.slice(0, 10) || "",
     });
     setImage(b.imageUrl || "");
+    setImages(b.imageUrl ? [b.imageUrl] : []);
     setShowForm(true);
   };
 
@@ -361,11 +380,12 @@ const HomeTopBanner = () => {
 
               <div className="space-y-5">
                 <MediaUploader
-                  label="Banner Image (Drag & Upload)"
-                  existingUrls={image ? [image] : []}
-                  onChange={(urls) => setImage(urls[0] || "")}
+                  label="Banner Image(s) (Drag & Upload)"
+                  existingUrls={images}
+                  onChange={(urls) => setImages(urls)}
                   folder={getS3Path.banner(`home-${position}-banner`, form.title)}
                   baseFileName={form.title}
+                  maxFiles={10}
                 />
               </div>
             </div>

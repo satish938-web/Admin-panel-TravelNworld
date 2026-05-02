@@ -352,20 +352,14 @@ const CreateDestination = () => {
     <div className="min-h-screen bg-[#f8fafc] font-sans text-slate-900">
       <GlobalStyle />
 
-      <header className="relative overflow-hidden pt-8 pb-20" style={{ background: 'linear-gradient(135deg,#1e0a0a 0%,#7f1d1d 50%,#b91c1c 100%)' }}>
-        <div className="absolute -top-12 -right-12 w-72 h-72 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle,rgba(255,255,255,.06),transparent)' }} />
-        <div className="absolute bottom-0 left-10 w-48 h-48 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle,rgba(255,255,255,.04),transparent)' }} />
-
-        <div className="relative max-w-7xl mx-auto px-6 flex items-center justify-between">
+      <main className="max-w-7xl mx-auto px-6 pt-12 pb-20">
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <p className="text-red-200 text-[10px] font-bold uppercase tracking-widest mb-1">Destination Manager</p>
-            <h1 className="text-white text-3xl font-black tracking-tight">Create & Manage Destinations</h1>
+            <p className="text-red-600 text-[10px] font-bold uppercase tracking-widest mb-1">Destination Manager</p>
+            <h1 className="text-slate-900 text-3xl font-black tracking-tight">Create & Manage Destinations</h1>
           </div>
           <ProfileButton />
         </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-6 -mt-12 pb-20">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
           <aside className="lg:col-span-4 space-y-6">

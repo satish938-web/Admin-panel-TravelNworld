@@ -16,6 +16,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
     testimonials: false,
     blog: false,
     terms: false,
+    home: false,
   });
 
   const handleLogout = async (e) => {
@@ -357,67 +358,90 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
             </div>
           </div>
 
-          {/* Hero Video */}
+          {/* Home Management Dropdown */}
           <div className="mx-4 my-1">
-            <Link
-              to="/hero-video"
-              className={`
-                nav-link-before
-                flex items-center gap-4 px-6 py-4
-                no-underline rounded-xl
-                transition-all duration-300
-                ${isActive("/hero-video")
-                  ? "text-red-600 font-bold"
-                  : "text-gray-800 hover:text-red-600 hover:translate-x-1"
-                }
-              `}
-              onClick={() => setSidebarOpen(false)}
+            <div
+              className="nav-link-before flex items-center justify-between px-6 py-4 text-gray-800 rounded-xl transition-all duration-300 cursor-pointer hover:bg-red-600/10 hover:text-red-600 hover:translate-x-1"
+              onClick={() =>
+                setDropdownState((prev) => ({
+                  ...prev,
+                  home: !prev.home,
+                }))
+              }
             >
-              <i className="fas fa-file-video text-base w-5 text-center"></i>
-              <span className="text-[13px] sm:text-sm">Hero Video</span>
-            </Link>
-          </div>
+              <div className="flex items-center gap-4">
+                <i className="fas fa-home text-base w-5 text-center"></i>
+                <span className="text-[13px] sm:text-sm font-semibold">Home Management</span>
+              </div>
+              <i
+                className={`fas fa-chevron-right text-xs sm:text-sm transition-transform duration-300 ${dropdownState.home ? "rotate-90" : ""
+                  }`}
+              ></i>
+            </div>
+            <div
+              className={`pl-6 overflow-hidden transition-all duration-300 ${dropdownState.home ? "max-h-[800px]" : "max-h-0"
+                }`}
+            >
+              <Link
+                to="/hero-video"
+                className={`flex items-center gap-3 px-6 py-3 my-1 text-sm sm:text-base rounded-lg transition-all duration-200 no-underline ${isActive("/hero-video")
+                    ? "text-red-600 bg-red-600/10 font-bold"
+                    : "text-gray-500 hover:text-red-600 hover:bg-red-600/10"
+                  }`}
+                onClick={() => setSidebarOpen(false)}
+              >
+                <i className="fas fa-file-video w-5 text-center"></i>
+                <span>Hero Video</span>
+              </Link>
+              
+              <Link
+                to="/customer-gallery"
+                className={`flex items-center gap-3 px-6 py-3 my-1 text-sm sm:text-base rounded-lg transition-all duration-200 no-underline ${isActive("/customer-gallery")
+                    ? "text-red-600 bg-red-600/10 font-bold"
+                    : "text-gray-500 hover:text-red-600 hover:bg-red-600/10"
+                  }`}
+                onClick={() => setSidebarOpen(false)}
+              >
+                <i className="fas fa-images w-5 text-center"></i>
+                <span>Customer Gallery</span>
+              </Link>
 
-          {/* Customer Gallery */}
-          <div className="mx-4 my-1">
-            <Link
-              to="/customer-gallery"
-              className={`
-                nav-link-before
-                flex items-center gap-4 px-6 py-4
-                text-gray-800 no-underline rounded-xl
-                transition-all duration-300
-                ${isActive("/customer-gallery")
-                  ? "text-red-600 font-bold"
-                  : "text-gray-800 hover:text-red-600 hover:translate-x-1"
-                }
-              `}
-              onClick={() => setSidebarOpen(false)}
-            >
-              <i className="fas fa-images text-base w-5 text-center"></i>
-              <span className="text-[13px] sm:text-sm">Customer Gallery</span>
-            </Link>
-          </div>
+              <Link
+                to="/testimonial-list"
+                className={`flex items-center gap-3 px-6 py-3 my-1 text-sm sm:text-base rounded-lg transition-all duration-200 no-underline ${isActive("/testimonial-list")
+                    ? "text-red-600 bg-red-600/10 font-bold shadow-[0_4px_15px_rgba(220,38,38,0.1)]"
+                    : "text-gray-500 hover:text-red-600 hover:bg-red-600/10"
+                  }`}
+                onClick={() => setSidebarOpen(false)}
+              >
+                <i className="fas fa-star w-5 text-center"></i>
+                <span>Testimonials</span>
+              </Link>
 
-          {/* Testimonials */}
-          <div className="mx-4 my-1">
-            <Link
-              to="/testimonial-list"
-              className={`
-                nav-link-before
-                flex items-center gap-4 px-6 py-4
-                text-gray-800 no-underline rounded-xl
-                transition-all duration-300
-                ${isActive("/testimonial-list")
-                  ? "text-red-600 bg-red-600/10 font-bold shadow-[0_4px_15px_rgba(220,38,38,0.1)]"
-                  : "hover:bg-red-600/10 hover:text-red-600 hover:translate-x-1"
-                }
-              `}
-              onClick={() => setSidebarOpen(false)}
-            >
-              <i className="fas fa-star text-base w-5 text-center"></i>
-              <span className="text-[13px] sm:text-sm font-semibold">Testimonials</span>
-            </Link>
+              {/* Legal / Terms items moved here */}
+              <Link
+                to="/privacy-policy"
+                className={`flex items-center gap-3 px-6 py-3 my-1 text-sm sm:text-base rounded-lg transition-all duration-200 no-underline ${isActive("/privacy-policy")
+                    ? "text-red-600 bg-red-600/10 font-bold"
+                    : "text-gray-500 hover:text-red-600 hover:bg-red-600/10"
+                  }`}
+                onClick={() => setSidebarOpen(false)}
+              >
+                <i className="fas fa-user-shield w-5 text-center"></i>
+                <span>Privacy Policy</span>
+              </Link>
+              <Link
+                to="/terms-of-use"
+                className={`flex items-center gap-3 px-6 py-3 my-1 text-sm sm:text-base rounded-lg transition-all duration-200 no-underline ${isActive("/terms-of-use")
+                    ? "text-red-600 bg-red-600/10 font-bold"
+                    : "text-gray-500 hover:text-red-600 hover:bg-red-600/10"
+                  }`}
+                onClick={() => setSidebarOpen(false)}
+              >
+                <i className="fas fa-file-contract w-5 text-center"></i>
+                <span>Terms of Use</span>
+              </Link>
+            </div>
           </div>
 
 
@@ -470,76 +494,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
             </div>
           </div>
 
-          {/* Terms Dropdown */}
-          <div className="mx-4 my-1">
-            <div
-              className="nav-link-before flex items-center justify-between px-6 py-4 text-gray-800 rounded-xl transition-all duration-300 cursor-pointer hover:bg-red-600/10 hover:text-red-600 hover:translate-x-1"
-              onClick={() =>
-                setDropdownState((prev) => ({
-                  ...prev,
-                  terms: !prev.terms,
-                }))
-              }
-            >
-              <div className="flex items-center gap-4">
-                <i className="fas fa-file-contract text-base w-5 text-center"></i>
-                <span className="text-[13px] sm:text-sm font-semibold">Terms</span>
-              </div>
-              <i
-                className={`fas fa-chevron-right text-xs sm:text-sm transition-transform duration-300 ${dropdownState.terms ? "rotate-90" : ""
-                  }`}
-              ></i>
-            </div>
-            <div
-              className={`pl-6 overflow-hidden transition-all duration-300 ${dropdownState.terms ? "max-h-[500px]" : "max-h-0"
-                }`}
-            >
-              <Link
-                to="/terms-management"
-                className={`flex items-center gap-3 px-6 py-3 my-1 text-sm sm:text-base rounded-lg transition-all duration-200 no-underline ${isActive("/terms-management")
-                    ? "text-white bg-red-600 font-bold shadow-md"
-                    : "text-gray-500 hover:text-red-600 hover:bg-red-600/10"
-                  }`}
-                onClick={() => setSidebarOpen(false)}
-              >
-                <i className="fas fa-file-invoice w-5 text-center"></i>
-                <span>Terms & Conditions</span>
-              </Link>
-              <Link
-                to="/payment-terms"
-                className={`flex items-center gap-3 px-6 py-3 my-1 text-sm sm:text-base rounded-lg transition-all duration-200 no-underline ${isActive("/payment-terms")
-                    ? "text-red-600 bg-red-600/10 font-medium"
-                    : "text-gray-500 hover:text-red-600 hover:bg-red-600/10"
-                  }`}
-                onClick={() => setSidebarOpen(false)}
-              >
-                <i className="fas fa-credit-card w-5 text-center"></i>
-                <span>Payment Mode Terms</span>
-              </Link>
-              <Link
-                to="/cancellation-policy"
-                className={`flex items-center gap-3 px-6 py-3 my-1 text-sm sm:text-base rounded-lg transition-all duration-200 no-underline ${isActive("/cancellation-policy")
-                    ? "text-red-600 bg-red-600/10 font-medium"
-                    : "text-gray-500 hover:text-red-600 hover:bg-red-600/10"
-                  }`}
-                onClick={() => setSidebarOpen(false)}
-              >
-                <i className="fas fa-ban w-5 text-center"></i>
-                <span>Cancellation Policy</span>
-              </Link>
-            </div>
-          </div>
 
-          {/* Manage Home */}
-          <div className="mx-4 my-1">
-            <a
-              href="manage-home.html"
-              className="nav-link-before flex items-center gap-4 px-6 py-4 text-gray-800 no-underline rounded-xl transition-all duration-300 hover:bg-red-600/10 hover:text-red-600 hover:translate-x-1"
-            >
-              <i className="fas fa-home text-base w-5 text-center"></i>
-              <span className="text-[13px] sm:text-sm">Manage Home</span>
-            </a>
-          </div>
 
           {/* Team Management */}
           <div className="mx-4 my-1">
@@ -642,26 +597,28 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
             </Link>
           </div>
 
-          {/* Review Management */}
-          <div className="mx-4 my-1">
-            <Link
-              to="/reviews"
-              className={`
-                nav-link-before
-                flex items-center gap-4 px-6 py-4
-                text-gray-800 no-underline rounded-xl
-                transition-all duration-300
-                ${isActive("/reviews")
-                  ? "text-red-600 bg-red-600/10 font-bold shadow-[0_4px_15px_rgba(220,38,38,0.1)]"
-                  : "hover:bg-red-600/10 hover:text-red-600 hover:translate-x-1"
-                }
-              `}
-              onClick={() => setSidebarOpen(false)}
-            >
-              <i className="fas fa-comment-dots text-base w-5 text-center"></i>
-              <span className="text-[13px] sm:text-sm font-semibold">Review Management</span>
-            </Link>
-          </div>
+          {/* Global Review Management (SuperAdmin Only) */}
+          {JSON.parse(localStorage.getItem("user"))?.role === "SUPERADMIN" && (
+            <div className="mx-4 my-1">
+              <Link
+                to="/reviews"
+                className={`
+                  nav-link-before
+                  flex items-center gap-4 px-6 py-4
+                  text-gray-800 no-underline rounded-xl
+                  transition-all duration-300
+                  ${isActive("/reviews")
+                    ? "text-red-600 bg-red-600/10 font-bold shadow-[0_4px_15px_rgba(220,38,38,0.1)]"
+                    : "hover:bg-red-600/10 hover:text-red-600 hover:translate-x-1"
+                  }
+                `}
+                onClick={() => setSidebarOpen(false)}
+              >
+                <i className="fas fa-comment-dots text-base w-5 text-center"></i>
+                <span className="text-[13px] sm:text-sm font-semibold">Global Reviews</span>
+              </Link>
+            </div>
+          )}
 
           {/* Logout */}
           <div className="mx-4 my-1">

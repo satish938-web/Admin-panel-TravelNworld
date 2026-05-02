@@ -6,11 +6,35 @@ import { API_BASE } from "../utils/api";
 
 export default function AdminDashboard() {
   const [bannerUrl, setBannerUrl] = useState("");
+  const [stats, setStats] = useState({
+    totalAgents: 0,
+    totalAdmins: 0,
+    totalItineraries: 0,
+    totalEnquiries: 0,
+    successRate: "99%"
+  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     createParticles();
     fetchBanner();
+    fetchStats();
   }, []);
+
+  const fetchStats = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/api/dashboard/stats`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+      });
+      if (res.data.success) {
+        setStats(res.data.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch dashboard stats", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchBanner = async () => {
     try {
@@ -47,8 +71,80 @@ export default function AdminDashboard() {
     }
   };
 
+  const formatTime = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMs = now - date;
+    const diffInMins = Math.floor(diffInMs / (1000 * 60));
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+    if (diffInMins < 60) return `${diffInMins} mins ago`;
+    if (diffInHours < 24) return `${diffInHours} hours ago`;
+    return `${diffInDays} days ago`;
+  };
+
   return (
     <>
+      <style>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.03; }
+          50% { transform: translateY(-100px) rotate(180deg); opacity: 0.08; }
+        }
+
+        .animate-float {
+          animation: float 8s ease-in-out infinite;
+        }
+
+        .stat-card-before {
+          position: relative;
+          overflow: hidden;
+        }
+
+        .stat-card-before::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 4px;
+          background: linear-gradient(45deg, rgb(220, 38, 38), rgb(220, 38, 38));
+        }
+
+        @media (max-width: 768px) {
+          .mobile-card {
+            display: block !important;
+          }
+          .desktop-table {
+            display: none !important;
+          }
+        }
+
+        @media (min-width: 769px) {
+          .mobile-card {
+            display: none !important;
+          }
+          .desktop-table {
+            display: table !important;
+          }
+        }
+      `}</style>
+
+      <link
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+        rel="stylesheet"
+      />
+
+      <div
+        className="fixed top-0 left-0 w-full h-full -z-[1] overflow-hidden bg-slate-50"
+        id="animatedBg"
+        style={bannerUrl ? {
+          backgroundImage: `linear-gradient(rgba(248, 250, 252, 0.85), rgba(248, 250, 252, 0.85)), url(${bannerUrl})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        } : {}}
+      ></div>
       <style>{`
         @keyframes float {
           0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.03; }
@@ -131,7 +227,7 @@ export default function AdminDashboard() {
               Customize Dashboard
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <Link to="/manage-agent-content" className="flex items-center gap-6 p-6 bg-white rounded-2xl border border-slate-100 hover:border-red-600/30 hover:shadow-2xl hover:shadow-red-600/10 transition-all group">
+              <Link to="/profilebutton" className="flex items-center gap-6 p-6 bg-white rounded-2xl border border-slate-100 hover:border-red-600/30 hover:shadow-2xl hover:shadow-red-600/10 transition-all group">
                 <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-red-600 text-2xl transition-transform group-hover:rotate-12">
                   <i className="fas fa-cog" />
                 </div>
@@ -140,7 +236,7 @@ export default function AdminDashboard() {
                   <p className="text-xs text-slate-400 font-medium">Update profile, name & role</p>
                 </div>
               </Link>
-              <Link to="/manage-agent-content" className="flex items-center gap-6 p-6 bg-white rounded-2xl border border-slate-100 hover:border-red-600/30 hover:shadow-2xl hover:shadow-red-600/10 transition-all group">
+              <Link to="/topbanner" className="flex items-center gap-6 p-6 bg-white rounded-2xl border border-slate-100 hover:border-red-600/30 hover:shadow-2xl hover:shadow-red-600/10 transition-all group">
                 <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-red-600 text-2xl transition-transform group-hover:rotate-12">
                   <i className="fas fa-image" />
                 </div>
@@ -162,7 +258,7 @@ export default function AdminDashboard() {
                 <i className="fas fa-users"></i>
               </div>
               <span className="text-[2rem] sm:text-[2.5rem] font-extrabold text-red-600 block mb-2">
-                15
+                {loading ? <span className="animate-pulse opacity-20">...</span> : stats.totalAdmins}
               </span>
               <div className="text-sm sm:text-base text-gray-500 font-medium">
                 Total Employees
@@ -176,34 +272,40 @@ export default function AdminDashboard() {
                 <i className="fas fa-user-shield"></i>
               </div>
               <span className="text-[2rem] sm:text-[2.5rem] font-extrabold text-red-600 block mb-2">
-                4
+                {loading ? <span className="animate-pulse opacity-20">...</span> : stats.totalAgents}
               </span>
               <div className="text-sm sm:text-base text-gray-500 font-medium">
                 Agents
               </div>
             </Link>
-            <div className="stat-card-before bg-white/90 backdrop-blur-[15px] border border-red-600/20 rounded-[20px] p-6 sm:p-8 text-center transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:scale-[1.02] hover:shadow-[0_15px_35px_rgba(37,99,235,0.15)]">
+            <Link
+              to={"/enquries"}
+              className="stat-card-before bg-white/90 backdrop-blur-[15px] border border-red-600/20 rounded-[20px] p-6 sm:p-8 text-center transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:scale-[1.02] hover:shadow-[0_15px_35px_rgba(37,99,235,0.15)]"
+            >
               <div className="text-4xl sm:text-5xl text-red-600 mb-3 sm:mb-4">
-                <i className="fas fa-user-cog"></i>
+                <i className="fas fa-envelope-open-text"></i>
               </div>
               <span className="text-[2rem] sm:text-[2.5rem] font-extrabold text-red-600 block mb-2">
-                3
+                {loading ? <span className="animate-pulse opacity-20">...</span> : stats.totalEnquiries}
               </span>
               <div className="text-sm sm:text-base text-gray-500 font-medium">
-                Admin Users
+                Total Inquiries
               </div>
-            </div>
-            <div className="stat-card-before bg-white/90 backdrop-blur-[15px] border border-red-600/20 rounded-[20px] p-6 sm:p-8 text-center transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:scale-[1.02] hover:shadow-[0_15px_35px_rgba(37,99,235,0.15)]">
+            </Link>
+            <Link
+              to={"/itineraries"}
+              className="stat-card-before bg-white/90 backdrop-blur-[15px] border border-red-600/20 rounded-[20px] p-6 sm:p-8 text-center transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:scale-[1.02] hover:shadow-[0_15px_35px_rgba(37,99,235,0.15)]"
+            >
               <div className="text-4xl sm:text-5xl text-red-600 mb-3 sm:mb-4">
-                <i className="fas fa-chart-line"></i>
+                <i className="fas fa-route"></i>
               </div>
               <span className="text-[2rem] sm:text-[2.5rem] font-extrabold text-red-600 block mb-2">
-                99%
+                {loading ? <span className="animate-pulse opacity-20">...</span> : stats.totalItineraries}
               </span>
               <div className="text-sm sm:text-base text-gray-500 font-medium">
-                Successful Clients
+                Total Itineraries
               </div>
-            </div>
+            </Link>
           </div>
 
           {/* Recent Activities - Responsive Table/Cards */}
@@ -234,114 +336,56 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="hover:bg-red-600/5">
-                    <td className="p-3 sm:p-4 lg:px-6 text-left border-b border-red-600/10 text-sm sm:text-base">
-                      New employee added
-                    </td>
-                    <td className="p-3 sm:p-4 lg:px-6 text-left border-b border-red-600/10 text-sm sm:text-base">
-                      Admin User
-                    </td>
-                    <td className="p-3 sm:p-4 lg:px-6 text-left border-b border-red-600/10 text-sm sm:text-base">
-                      2 hours ago
-                    </td>
-                    <td className="p-3 sm:p-4 lg:px-6 text-left border-b border-red-600/10">
-                      <span className="text-emerald-600 font-semibold text-sm sm:text-base">
-                        ✓ Success
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-red-600/5">
-                    <td className="p-3 sm:p-4 lg:px-6 text-left border-b border-red-600/10 text-sm sm:text-base">
-                      Team member updated
-                    </td>
-                    <td className="p-3 sm:p-4 lg:px-6 text-left border-b border-red-600/10 text-sm sm:text-base">
-                      Admin User
-                    </td>
-                    <td className="p-3 sm:p-4 lg:px-6 text-left border-b border-red-600/10 text-sm sm:text-base">
-                      5 hours ago
-                    </td>
-                    <td className="p-3 sm:p-4 lg:px-6 text-left border-b border-red-600/10">
-                      <span className="text-emerald-600 font-semibold text-sm sm:text-base">
-                        ✓ Success
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-red-600/5">
-                    <td className="p-3 sm:p-4 lg:px-6 text-left border-b border-red-600/10 text-sm sm:text-base">
-                      PDF report generated
-                    </td>
-                    <td className="p-3 sm:p-4 lg:px-6 text-left border-b border-red-600/10 text-sm sm:text-base">
-                      Admin User
-                    </td>
-                    <td className="p-3 sm:p-4 lg:px-6 text-left border-b border-red-600/10 text-sm sm:text-base">
-                      1 day ago
-                    </td>
-                    <td className="p-3 sm:p-4 lg:px-6 text-left border-b border-red-600/10">
-                      <span className="text-emerald-600 font-semibold text-sm sm:text-base">
-                        ✓ Success
-                      </span>
-                    </td>
-                  </tr>
+                  {stats.activities?.length > 0 ? (
+                    stats.activities.map((act, i) => (
+                      <tr key={i} className="hover:bg-red-600/5">
+                        <td className="p-3 sm:p-4 lg:px-6 text-left border-b border-red-600/10 text-sm sm:text-base font-medium text-slate-700">
+                          {act.activity}
+                        </td>
+                        <td className="p-3 sm:p-4 lg:px-6 text-left border-b border-red-600/10 text-sm sm:text-base text-slate-500">
+                          {act.user}
+                        </td>
+                        <td className="p-3 sm:p-4 lg:px-6 text-left border-b border-red-600/10 text-sm sm:text-base text-slate-400 font-bold">
+                          {formatTime(act.time)}
+                        </td>
+                        <td className="p-3 sm:p-4 lg:px-6 text-left border-b border-red-600/10">
+                          <span className="text-emerald-600 font-black text-sm sm:text-base flex items-center gap-2">
+                            <i className="fas fa-check-circle" /> {act.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="4" className="p-12 text-center text-slate-300 italic">No recent activities found</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
 
             {/* Mobile Card View */}
             <div className="mobile-card space-y-4">
-              <div className="bg-white rounded-[15px] border border-red-600/20 p-4 shadow-sm">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="font-semibold text-red-600">
-                    New employee added
+              {stats.activities?.map((act, i) => (
+                <div key={i} className="bg-white rounded-[15px] border border-red-600/20 p-4 shadow-sm">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="font-semibold text-red-600">
+                      {act.activity}
+                    </div>
+                    <span className="text-emerald-600 font-semibold text-sm">
+                      ✓ {act.status}
+                    </span>
                   </div>
-                  <span className="text-emerald-600 font-semibold text-sm">
-                    ✓ Success
-                  </span>
-                </div>
-                <div className="text-sm text-gray-600 space-y-1">
-                  <div>
-                    <span className="font-medium">User:</span> Admin User
-                  </div>
-                  <div>
-                    <span className="font-medium">Time:</span> 2 hours ago
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white rounded-[15px] border border-red-600/20 p-4 shadow-sm">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="font-semibold text-red-600">
-                    Team member updated
-                  </div>
-                  <span className="text-emerald-600 font-semibold text-sm">
-                    ✓ Success
-                  </span>
-                </div>
-                <div className="text-sm text-gray-600 space-y-1">
-                  <div>
-                    <span className="font-medium">User:</span> Admin User
-                  </div>
-                  <div>
-                    <span className="font-medium">Time:</span> 5 hours ago
+                  <div className="text-sm text-gray-600 space-y-1">
+                    <div>
+                      <span className="font-medium text-slate-400">User:</span> {act.user}
+                    </div>
+                    <div>
+                      <span className="font-medium text-slate-400">Time:</span> {formatTime(act.time)}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="bg-white rounded-[15px] border border-red-600/20 p-4 shadow-sm">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="font-semibold text-red-600">
-                    PDF report generated
-                  </div>
-                  <span className="text-emerald-600 font-semibold text-sm">
-                    ✓ Success
-                  </span>
-                </div>
-                <div className="text-sm text-gray-600 space-y-1">
-                  <div>
-                    <span className="font-medium">User:</span> Admin User
-                  </div>
-                  <div>
-                    <span className="font-medium">Time:</span> 1 day ago
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 
@@ -353,48 +397,54 @@ export default function AdminDashboard() {
               </h3>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-              <a
-                href="manage-employees.html"
-                className="flex items-center gap-3 sm:gap-4 p-4 sm:p-6 bg-gradient-to-br from-red-600/10 to-red-600/10 rounded-[15px] no-underline text-red-600 transition-all duration-300 hover:scale-105"
+              <Link
+                to="/adduser"
+                className="flex items-center gap-3 sm:gap-4 p-4 sm:p-6 bg-red-600/5 rounded-[15px] no-underline text-red-600 transition-all duration-300 hover:scale-105 border border-red-600/10 hover:border-red-600/30"
               >
-                <i className="fas fa-user-plus text-xl sm:text-[2rem]"></i>
+                <div className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+                  <i className="fas fa-user-plus text-xl" />
+                </div>
                 <div className="flex-1">
-                  <div className="font-semibold text-sm sm:text-base">
+                  <div className="font-black text-sm sm:text-base uppercase tracking-wider">
                     Add Employee
                   </div>
-                  <div className="text-xs sm:text-sm opacity-80">
-                    Quick employee registration
+                  <div className="text-[10px] opacity-80 font-bold uppercase tracking-tight mt-1">
+                    Quick registration
                   </div>
                 </div>
-              </a>
-              <a
-                href="manage-team.html"
-                className="flex items-center gap-3 sm:gap-4 p-4 sm:p-6 bg-gradient-to-br from-emerald-600/10 to-red-600/10 rounded-[15px] no-underline text-emerald-600 transition-all duration-300 hover:scale-105"
+              </Link>
+              <Link
+                to="/allusers"
+                className="flex items-center gap-3 sm:gap-4 p-4 sm:p-6 bg-emerald-600/5 rounded-[15px] no-underline text-emerald-600 transition-all duration-300 hover:scale-105 border border-emerald-600/10 hover:border-emerald-600/30"
               >
-                <i className="fas fa-users-cog text-xl sm:text-[2rem]"></i>
+                <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+                  <i className="fas fa-users-cog text-xl" />
+                </div>
                 <div className="flex-1">
-                  <div className="font-semibold text-sm sm:text-base">
+                  <div className="font-black text-sm sm:text-base uppercase tracking-wider">
                     Manage Team
                   </div>
-                  <div className="text-xs sm:text-sm opacity-80">
-                    Update team members
+                  <div className="text-[10px] opacity-80 font-bold uppercase tracking-tight mt-1">
+                    Update members
                   </div>
                 </div>
-              </a>
-              <a
-                href="export-data.html"
-                className="flex items-center gap-3 sm:gap-4 p-4 sm:p-6 bg-gradient-to-br from-red-600/10 to-emerald-600/10 rounded-[15px] no-underline text-red-600 transition-all duration-300 hover:scale-105 sm:col-span-2 lg:col-span-1"
+              </Link>
+              <Link
+                to="/exportdata"
+                className="flex items-center gap-3 sm:gap-4 p-4 sm:p-6 bg-red-600/5 rounded-[15px] no-underline text-red-600 transition-all duration-300 hover:scale-105 border border-red-600/10 hover:border-red-600/30 sm:col-span-2 lg:col-span-1"
               >
-                <i className="fas fa-download text-xl sm:text-[2rem]"></i>
+                <div className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+                  <i className="fas fa-download text-xl" />
+                </div>
                 <div className="flex-1">
-                  <div className="font-semibold text-sm sm:text-base">
+                  <div className="font-black text-sm sm:text-base uppercase tracking-wider">
                     Export Data
                   </div>
-                  <div className="text-xs sm:text-sm opacity-80">
-                    Generate PDF reports
+                  <div className="text-[10px] opacity-80 font-bold uppercase tracking-tight mt-1">
+                    Generate Reports
                   </div>
                 </div>
-              </a>
+              </Link>
             </div>
           </div>
         </main>

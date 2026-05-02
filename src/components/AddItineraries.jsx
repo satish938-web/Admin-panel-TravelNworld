@@ -28,11 +28,7 @@ const THEMES = [
 const CLASSIFICATIONS = ["Trending", "Exclusive", "Weekend", "Top Selling"];
 const TYPE_OPTIONS    = ["Flexible", "Fixed", "Group", "Customizable"];
 const VISIBILITY_OPTIONS = ["Public", "Private", "Draft"];
-const DEFAULT_CANCELLATION = `◆ Airfare/Train fare cancellation applied original booking refund policy
-◆ Before 30 days of cancellation: 100% refund of total booking amount
-◆ Between 15-30 days: 50% refund of total booking amount
-◆ Between 7-15 days: 25% refund of total booking amount
-◆ Less than 7 days: No refund`;
+const DEFAULT_CANCELLATION = "";
 
 /* ─── Global Styles ──────────────────────────────────────────────────────── */
 const GlobalStyle = () => (
@@ -411,21 +407,16 @@ const AddItineraries = ({ onSubmit, initialData = null }) => {
     <>
       <GlobalStyle />
       <div className="ai-fade-in" style={{ minHeight: "100vh", background: "#f4f4f5" }}>
-        <header style={{ position: "relative", overflow: "hidden", background: "linear-gradient(135deg,#1e0a0a 0%,#7f1d1d 50%,#b91c1c 100%)" }}>
-          <div style={{ position: "relative", maxWidth: 896, margin: "0 auto", padding: "28px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div>
-              <p style={{ color: "#fca5a5", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 4px" }}>Itinerary Builder</p>
-              <h1 style={{ color: "white", fontSize: 28, fontWeight: 800, lineHeight: 1.2, margin: "0 0 4px" }}>{isEditMode ? "Edit Itinerary" : "Create New Itinerary"}</h1>
-              <div style={{ marginTop: 20, display: "flex", alignItems: "center", gap: 16, maxWidth: 360 }}>
-                <div className="ai-progress-bar" style={{ flex: 1 }}><div className="ai-progress-fill" style={{ width: `${(completedSections / 5) * 100}%` }} /></div>
-                <span style={{ fontSize: 11, fontWeight: 700, color: "#fca5a5" }}>{completedSections} / 5 sections</span>
-              </div>
-            </div>
-            <ProfileButton />
-          </div>
-        </header>
-
         <div style={{ maxWidth: 896, margin: "0 auto", padding: "28px 16px", display: "flex", flexDirection: "column", gap: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 4 }}>
+             <div style={{ flex: 1, maxWidth: 360 }}>
+                <p style={{ color: "#ef4444", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 8px" }}>Itinerary Builder</p>
+                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                  <div className="ai-progress-bar" style={{ flex: 1, background: "#e5e7eb" }}><div className="ai-progress-fill" style={{ width: `${(completedSections / 5) * 100}%` }} /></div>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af" }}>{completedSections} / 5 sections</span>
+                </div>
+             </div>
+          </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 16 }}>
             <StatCard label="Domestic" value={domesticDestinations.length} color="#2563eb" />
             <StatCard label="International" value={internationalDestinations.length} color="#d97706" />
