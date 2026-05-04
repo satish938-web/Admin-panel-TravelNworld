@@ -399,13 +399,14 @@ const AgentContentManager = () => {
           <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
             <MediaUploader
               key={`${selectedAgentId}-banner`}
-              label="Agent Profile Banner (Drag & Upload)"
-              existingUrls={agentData.bannerImage ? [agentData.bannerImage] : []}
-              onChange={(urls) => handleUpdateField("bannerImage", urls[0] || "")}
+              label="Agent Profile Banners (Drag & Upload Multiple)"
+              maxFiles={10}
+              existingUrls={Array.isArray(agentData.bannerImage) ? agentData.bannerImage : (agentData.bannerImage ? [agentData.bannerImage] : [])}
+              onChange={(urls) => handleUpdateField("bannerImage", urls)}
               folder={getS3Path.agentBanner(agentName)}
               baseFileName={`${agentName}-banner`}
             />
-            <p className="mt-4 text-[10px] text-slate-400 font-medium italic">This banner appears as the large background image on the agent's public profile.</p>
+            <p className="mt-4 text-[10px] text-slate-400 font-medium italic">These banners appear as a carousel background on the agent's public profile. You can upload up to 10 images.</p>
           </div>
         );
       case "branchAddresses":

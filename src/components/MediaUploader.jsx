@@ -77,9 +77,9 @@ const MediaUploader = ({
             let uploadName = file.name;
             if (baseFileName) {
               const extension = file.name.split('.').pop();
-              // If multiple files, add index (e.g. title-1.jpg, title-2.jpg)
-              // If only 1 file allowed, just use title.jpg
-              const suffix = allowed.length > 1 ? `-${index + 1}` : "";
+              // Use total count to ensure unique filenames and prevent overwriting
+              const fileIndex = currentCount + index + 1;
+              const suffix = maxFiles > 1 ? `-${fileIndex}` : "";
               uploadName = `${baseFileName}${suffix}.${extension}`;
             }
 

@@ -15,8 +15,8 @@ const HeroVideoManagement = () => {
   
   const [uploadedVideos, setUploadedVideos] = useState([]);
 
-  const pages = ['home', 'about', 'domestic', 'international', 'contact', 'blog'];
-  const filters = ['Home', 'About', 'Domestic', 'International', 'Contact', 'Blog'];
+  const pages = ['home', 'about', 'packages', 'destination', 'contact', 'blog'];
+  const filters = ['Home', 'About', 'Packages', 'Destination', 'Contact', 'Blog'];
 
   // Load hero videos from backend on mount
   useEffect(() => {
