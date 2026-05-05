@@ -3,6 +3,7 @@ import { HiLocationMarker, HiTrash, HiSearch, HiStar, HiPlus, HiX, HiVideoCamera
 import ProfileButton from '../components/ProfileButton';
 import MediaUploader from '../components/MediaUploader';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 import { getS3Path } from '../utils/pathUtils';
 import { API_BASE } from '../utils/api';
 
@@ -13,6 +14,8 @@ const TestimonialList = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -40,6 +43,7 @@ const TestimonialList = () => {
       setTestimonials(res.data.data);
     } catch (error) {
       console.error("Fetch error:", error);
+      toast.error("Failed to load testimonials");
     } finally {
       setLoading(false);
     }
@@ -48,6 +52,7 @@ const TestimonialList = () => {
   const handleSave = async (e) => {
     e.preventDefault();
     setUploading(true);
+    const loadToast = toast.loading(isEditing ? "Updating testimonial..." : "Saving testimonial...");
     try {
       const token = localStorage.getItem('token');
       const payload = {
@@ -55,32 +60,57 @@ const TestimonialList = () => {
         [formData.type === 'video' ? 'videoUrl' : 'image']: uploadedUrl
       };
 
-      await axios.post(API_ENDPOINT, payload, {
-        headers: { 
-          Authorization: `Bearer ${token}`
-        }
-      });
+      if (isEditing) {
+        await axios.put(`${API_ENDPOINT}/${editId}`, payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        toast.success("Testimonial updated successfully", { id: loadToast });
+      } else {
+        await axios.post(API_ENDPOINT, payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        toast.success("Testimonial added successfully", { id: loadToast });
+      }
       setIsModalOpen(false);
       resetForm();
       fetchTestimonials();
     } catch (error) {
       console.error("Save error:", error);
-      alert("Error: " + (error.response?.data?.message || error.message));
+      toast.error("Error: " + (error.response?.data?.message || error.message), { id: loadToast });
     } finally {
       setUploading(false);
     }
   };
 
+  const handleEdit = (t) => {
+    setFormData({
+      name: t.name || '',
+      role: t.role || '',
+      content: t.content || '',
+      rating: t.rating || 5,
+      type: t.type || 'text',
+      location: t.location || '',
+      videoUrl: t.videoUrl || '',
+      visibility: t.visibility || 'Public'
+    });
+    setUploadedUrl(t.image || t.videoUrl || "");
+    setEditId(t._id);
+    setIsEditing(true);
+    setIsModalOpen(true);
+  };
+
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this testimonial? This action cannot be undone.")) {
+      const deleteToast = toast.loading("Deleting testimonial...");
       try {
         const token = localStorage.getItem('token');
         await axios.delete(`${API_ENDPOINT}/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        toast.success("Testimonial deleted successfully", { id: deleteToast });
         fetchTestimonials();
       } catch (error) {
-        alert("Delete failed");
+        toast.error("Delete failed", { id: deleteToast });
       }
     }
   };
@@ -92,6 +122,8 @@ const TestimonialList = () => {
       visibility: 'Public'
     });
     setUploadedUrl("");
+    setIsEditing(false);
+    setEditId(null);
   };
 
   const filteredTestimonials = testimonials.filter(t => {
@@ -244,6 +276,13 @@ const TestimonialList = () => {
                   </div>
 
                   <div className="pt-6 flex gap-3">
+                    {/* <button
+                      onClick={() => handleEdit(t)}
+                      className="flex-1 bg-slate-50 hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all border border-slate-100 hover:border-emerald-100"
+                    >
+                      <i className="fas fa-edit text-xl" />
+                      <span>Edit</span>
+                    </button> */}
                     <button
                       onClick={() => handleDelete(t._id)}
                       className="flex-1 bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-600 font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all border border-slate-100 hover:border-red-100"
@@ -251,9 +290,6 @@ const TestimonialList = () => {
                       <HiTrash className="text-xl" />
                       <span>Remove</span>
                     </button>
-                    <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300">
-                      <HiCheckCircle className={t.visibility === 'Public' ? 'text-emerald-500' : 'text-slate-200'} />
-                    </div>
                   </div>
                 </div>
               </div>
@@ -263,8 +299,8 @@ const TestimonialList = () => {
 
         {/* Modal: Add Testimonial */}
         {isModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-xl p-4 overflow-y-auto">
-            <div className="bg-white rounded-[3rem] w-full max-w-2xl shadow-2xl relative">
+          <div className="fixed inset-0 z-[2000] flex items-start justify-center bg-slate-900/60 backdrop-blur-xl p-4 overflow-y-auto py-10">
+            <div className="bg-white rounded-[3rem] w-full max-w-2xl shadow-2xl relative my-auto">
               {/* Close Button */}
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -275,8 +311,8 @@ const TestimonialList = () => {
 
               <div className="p-10 space-y-8">
                 <div className="text-center">
-                  <h2 className="text-3xl font-black text-slate-900">New Social Proof</h2>
-                  <p className="text-slate-400 font-medium">Add a new success story to your dashboard.</p>
+                  <h2 className="text-3xl font-black text-slate-900">{isEditing ? 'Edit Social Proof' : 'New Social Proof'}</h2>
+                  <p className="text-slate-400 font-medium">{isEditing ? 'Update this traveler story.' : 'Add a new success story to your dashboard.'}</p>
                 </div>
 
                 <form onSubmit={handleSave} className="space-y-6">
@@ -348,9 +384,9 @@ const TestimonialList = () => {
                     {uploading ? (
                       <div className="flex items-center justify-center gap-3">
                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Publishing Story...
+                        {isEditing ? 'Updating Story...' : 'Publishing Story...'}
                       </div>
-                    ) : 'Publish Testimonial'}
+                    ) : isEditing ? 'Update Testimonial' : 'Publish Testimonial'}
                   </button>
                 </form>
               </div>

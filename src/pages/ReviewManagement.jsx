@@ -333,13 +333,13 @@ const ReviewManagement = () => {
 
                 <div className="mt-8 pt-6 border-t border-slate-50 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <button
+                    {/* <button
                       onClick={() => handleEdit(review)}
                       className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center hover:bg-blue-600 hover:text-white hover:shadow-lg hover:shadow-blue-200 transition-all active:scale-95"
                       title="Edit Review"
                     >
                       <HiPencil size={18} />
-                    </button>
+                    </button> */}
                     <button
                       onClick={() => handleDelete(review._id)}
                       className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center hover:bg-red-600 hover:text-white hover:shadow-lg hover:shadow-red-200 transition-all active:scale-95"

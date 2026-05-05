@@ -542,16 +542,6 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
                 Home Top Banner
               </Link>
 
-              <Link
-                to="/bannerads/manage"
-                className={`block px-6 py-3 my-1 text-sm sm:text-base rounded-lg transition-all duration-200 no-underline ${isActive("/bannerads/manage")
-                    ? "text-red-600 bg-red-600/10 font-medium"
-                    : "text-gray-500 hover:text-red-600 hover:bg-red-600/10"
-                  }`}
-                onClick={() => setSidebarOpen(false)}
-              >
-                Manage Banner Ads
-              </Link>
             </div>
           </div>
 

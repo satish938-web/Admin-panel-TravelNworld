@@ -237,25 +237,35 @@ const HomeTopBanner = () => {
               </div>
             </div>
 
-            <div className="mt-5 grid gap-4 sm:grid-cols-3">
-              <input
-                placeholder="Search banners"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-              />
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-              />
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-              />
+            <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center">
+              <div className="flex-1 grid gap-4 sm:grid-cols-3">
+                <input
+                  placeholder="Search banners"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                />
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                />
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+              {(search || startDate || endDate) && (
+                <button 
+                  onClick={() => { setSearch(""); setStartDate(""); setEndDate(""); }}
+                  className="px-6 py-3 text-sm font-bold text-red-500 hover:bg-red-50 rounded-2xl transition-all whitespace-nowrap"
+                >
+                  Reset Filters
+                </button>
+              )}
             </div>
           </div>
 
@@ -279,10 +289,6 @@ const HomeTopBanner = () => {
 
                 <div className="space-y-3 p-5">
                   <p className="text-sm leading-6 text-slate-600 line-clamp-3">{b.desc || "No description available."}</p>
-                  <div className="flex flex-wrap gap-2 text-xs font-medium text-slate-500">
-                    <span className="rounded-full bg-slate-100 px-3 py-1">Start: {b.startDate?.slice(0, 10)}</span>
-                    <span className="rounded-full bg-slate-100 px-3 py-1">End: {b.endDate?.slice(0, 10)}</span>
-                  </div>
                   <div className="flex flex-wrap gap-2 pt-1">
                     <button
                       onClick={() => handleEdit(b)}
@@ -358,21 +364,31 @@ const HomeTopBanner = () => {
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="block text-sm font-semibold text-slate-800">Start date</label>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="text-sm font-semibold text-slate-800">Start date</label>
+                      {form.startDate && (
+                        <button type="button" onClick={() => setForm({...form, startDate: ""})} className="text-[10px] font-bold text-red-500 hover:underline">Clear</button>
+                      )}
+                    </div>
                     <input
                       type="date"
                       value={form.startDate}
                       onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-                      className="mt-2 w-full rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      className="w-full rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-800">End date</label>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="text-sm font-semibold text-slate-800">End date</label>
+                      {form.endDate && (
+                        <button type="button" onClick={() => setForm({...form, endDate: ""})} className="text-[10px] font-bold text-red-500 hover:underline">Clear</button>
+                      )}
+                    </div>
                     <input
                       type="date"
                       value={form.endDate}
                       onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-                      className="mt-2 w-full rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      className="w-full rounded-[18px] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                     />
                   </div>
                 </div>

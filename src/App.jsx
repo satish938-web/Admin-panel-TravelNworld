@@ -34,6 +34,7 @@ import PaymentTerms from "./pages/PaymentTerms";
 import CancellationPolicy from "./pages/CancellationPolicy";
 import ReviewManagement from "./pages/ReviewManagement";
 import PolicyManager from "./pages/PolicyManager";
+import { Toaster } from "react-hot-toast";
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(
@@ -65,6 +66,7 @@ const App = () => {
 
   return (
     <Router>
+      <Toaster position="top-center" reverseOrder={false} />
       <Routes>
         <Route
           path="/login"

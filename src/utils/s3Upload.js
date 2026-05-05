@@ -7,7 +7,7 @@ import { API_BASE } from "./api";
  * @param {string} folder - Destination folder (e.g., 'blogs', 'itineraries')
  * @returns {Promise<string>} - The S3 object key to be stored in DB
  */
-export const uploadToS3 = async (file, folder = "uploads", customFileName = null) => {
+export const uploadToS3 = async (file, folder = "uploads", customFileName = null, onProgress = null) => {
   const token = localStorage.getItem("token");
   
   const fileNameToUse = customFileName || file.name;
@@ -34,11 +34,16 @@ export const uploadToS3 = async (file, folder = "uploads", customFileName = null
     console.log("Got presigned URL. Starting direct upload to S3...");
 
     // 2. Upload file directly to S3 using PUT
-    // We use axios.put or fetch. axios is already imported.
     await axios.put(uploadUrl, file, {
       headers: {
         "Content-Type": file.type,
       },
+      onUploadProgress: (progressEvent) => {
+        if (onProgress && progressEvent.total) {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onProgress(percentCompleted);
+        }
+      }
     });
 
     console.log("Upload successful! Key:", fileKey);

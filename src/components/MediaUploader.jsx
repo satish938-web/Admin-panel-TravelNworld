@@ -20,11 +20,19 @@ const MediaUploader = ({
   folder = "media", // New prop
   baseFileName = "", // New prop: used to rename files based on title/name
   accept = "image/*,video/*", // New prop: to restrict file types
+  onBusy, // New prop: notifies parent when uploading
 }) => {
   const [mediaItems, setMediaItems] = useState(() =>
     existingUrls
       .filter(Boolean)
-      .map((url) => ({ url, status: "done", isVideo: /\.(mp4|mov|avi|webm|mkv)/i.test(url) }))
+      .map((item) => {
+        const url = typeof item === "string" ? item : (item.url || "");
+        return { 
+          url, 
+          status: "done", 
+          isVideo: /\.(mp4|mov|avi|webm|mkv)/i.test(String(url)) 
+        };
+      })
   );
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -59,38 +67,51 @@ const MediaUploader = ({
     const placeholders = allowed.map((f) => ({
       url: URL.createObjectURL(f),
       status: "uploading",
+      progress: 0,
       isVideo: f.type.startsWith("video/"),
       name: f.name,
     }));
     const next = [...mediaItems, ...placeholders];
     setMediaItems(next);
     setUploading(true);
+    onBusy && onBusy(true);
 
     try {
       const { uploadToS3 } = await import("../utils/s3Upload");
 
-      // Upload each file and keep track of its specific placeholder
-      const uploadResults = await Promise.all(
-        allowed.map(async (file, index) => {
-          try {
-            // Determine the file name to use
-            let uploadName = file.name;
-            if (baseFileName) {
-              const extension = file.name.split('.').pop();
-              // Use total count to ensure unique filenames and prevent overwriting
-              const fileIndex = currentCount + index + 1;
-              const suffix = maxFiles > 1 ? `-${fileIndex}` : "";
-              uploadName = `${baseFileName}${suffix}.${extension}`;
-            }
-
-            const fileUrl = await uploadToS3(file, folder, uploadName);
-            return { index, url: fileUrl, status: "done", isVideo: file.type.startsWith("video/") };
-          } catch (err) {
-            console.error(`Failed to upload ${file.name}:`, err);
-            return { index, status: "error", isVideo: file.type.startsWith("video/"), url: URL.createObjectURL(file) };
+      // Upload each file sequentially to avoid saturating bandwidth
+      const uploadResults = [];
+      for (let i = 0; i < allowed.length; i++) {
+        const file = allowed[i];
+        const index = i;
+        const targetIdx = currentCount + index;
+        
+        try {
+          // Determine the file name to use
+          let uploadName = file.name;
+          if (baseFileName) {
+            const extension = file.name.split('.').pop();
+            const fileIndex = currentCount + index + 1;
+            const suffix = maxFiles > 1 ? `-${fileIndex}` : "";
+            uploadName = `${baseFileName}${suffix}.${extension}`;
           }
-        })
-      );
+
+          const fileUrl = await uploadToS3(file, folder, uploadName, (progress) => {
+            setMediaItems(prev => {
+              const updated = [...prev];
+              if (updated[targetIdx]) {
+                updated[targetIdx] = { ...updated[targetIdx], progress };
+              }
+              return updated;
+            });
+          });
+
+          uploadResults.push({ index, url: fileUrl, status: "done", isVideo: file.type.startsWith("video/") });
+        } catch (err) {
+          console.error(`Failed to upload ${file.name}:`, err);
+          uploadResults.push({ index, status: "error", isVideo: file.type.startsWith("video/"), url: URL.createObjectURL(file) });
+        }
+      }
 
       // Map the results back to the state in the correct order
       setMediaItems(prev => {
@@ -101,7 +122,8 @@ const MediaUploader = ({
             updated[targetIdx] = {
               url: res.url,
               status: res.status,
-              isVideo: res.isVideo
+              isVideo: res.isVideo,
+              progress: 100
             };
           }
         });
@@ -121,6 +143,7 @@ const MediaUploader = ({
       console.error("Upload batch failed:", err);
     } finally {
       setUploading(false);
+      onBusy && onBusy(false);
     }
 
   };
@@ -175,7 +198,9 @@ const MediaUploader = ({
             <div className="absolute inset-0 bg-white/70 flex items-center justify-center rounded-xl">
               <div className="flex flex-col items-center gap-2">
                 <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin" />
-                <p className="text-sm text-red-600 font-medium">Uploading…</p>
+                <p className="text-sm text-red-600 font-medium">
+                  Uploading {mediaItems.filter(i => i.status === "uploading").length} file(s)…
+                </p>
               </div>
             </div>
           )}
@@ -202,8 +227,15 @@ const MediaUploader = ({
               )}
               {/* Status overlay */}
               {item.status === "uploading" && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2">
+                  <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span className="text-white text-[10px] font-bold">{item.progress || 0}%</span>
+                  <div className="w-12 h-1 bg-white/20 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-red-500 transition-all duration-300" 
+                      style={{ width: `${item.progress || 0}%` }}
+                    />
+                  </div>
                 </div>
               )}
               {item.status === "error" && (

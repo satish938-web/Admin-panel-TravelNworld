@@ -4,6 +4,7 @@ import { MdFlightTakeoff, MdPublic } from 'react-icons/md';
 import ProfileButton from '../components/ProfileButton';
 import AddItineraries from '../components/AddItineraries';
 import axios from 'axios';
+import { toast } from '../utils/toast';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '';
 
@@ -129,8 +130,9 @@ const Itinerary = ({ isAdminOnly = false }) => {
       });
       setItineraries((prev) => prev.filter((it) => it.slug !== slug));
       setTotal((t) => t - 1);
+      toast.success('Itinerary deleted successfully');
     } catch (err) {
-      alert('Failed to delete itinerary.');
+      toast.error('Failed to delete itinerary');
     } finally {
       setDeleting(null);
     }
@@ -146,7 +148,7 @@ const Itinerary = ({ isAdminOnly = false }) => {
       setEditingItinerary(data);
       setShowModal(true);
     } catch (err) {
-      alert('Failed to load itinerary data for editing.');
+      toast.error('Failed to load itinerary data');
     }
   };
 
@@ -332,13 +334,13 @@ const Itinerary = ({ isAdminOnly = false }) => {
 
                 {/* Action Overlay */}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                  <button
+                  {/* <button
                     onClick={() => handleEdit(item.slug)}
                     className="w-10 h-10 rounded-full bg-white text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-colors shadow-lg"
                     title="Edit"
                   >
                     <HiPencil size={18} />
-                  </button>
+                  </button> */}
                   <button
                     onClick={() => handleDelete(item.slug)}
                     disabled={deleting === item.slug}

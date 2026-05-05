@@ -121,13 +121,13 @@ const UserList = () => {
                   >
                     <HiEye size={20} className="cursor-pointer" />
                   </button>
-                  <button
+                  {/* <button
                     className="text-green-600 hover:text-green-800 p-2 rounded"
                     aria-label={`Edit ${user.name}`}
                     onClick={() => alert(`Edit user: ${user.name}`)}
                   >
                     <HiPencil size={20} className="cursor-pointer" />
-                  </button>
+                  </button> */}
                   <button
                     className="text-red-600 hover:text-red-800 p-2 rounded"
                     aria-label={`Delete ${user.name}`}
@@ -173,13 +173,13 @@ const UserList = () => {
                   >
                     <HiEye size={20} className="cursor-pointer" />
                   </button>
-                  <button
+                  {/* <button
                     className="text-green-600 hover:text-green-800 p-2 rounded"
                     aria-label={`Edit ${user.name}`}
                     onClick={() => alert(`Edit user: ${user.name}`)}
                   >
                     <HiPencil size={20} className="cursor-pointer" />
-                  </button>
+                  </button> */}
                   <button
                     className="text-red-600 hover:text-red-800 p-2 rounded"
                     aria-label={`Delete ${user.name}`}

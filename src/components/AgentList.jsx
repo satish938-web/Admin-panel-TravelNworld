@@ -4,7 +4,7 @@ import { HiPencil, HiTrash, HiEye, HiCheckCircle, HiXCircle, HiExternalLink } fr
 import { toast } from "../utils/toast";
 import ProfileButton from "./ProfileButton";
 import axios from "axios";
-import { API_BASE, PUBLIC_FRONTEND_URL } from "../utils/api";
+import { API_BASE, PUBLIC_FRONTEND_URL, getImageUrl } from "../utils/api";
 import MediaUploader from "./MediaUploader";
 import { getS3Path } from "../utils/pathUtils";
 
@@ -180,7 +180,27 @@ const AgentList = () => {
 
   const handleSearch = (e) => { setSearch(e.target.value); setShowSuggestions(true); };
   const handleSuggestionClick = (value) => { setSearch(value); setShowSuggestions(false); };
-  const handleView = (agent) => { setSelectedAgent(agent); };
+  const handleView = async (agent) => {
+    try {
+      const token = localStorage.getItem("token");
+      const [agentRes, itiRes] = await Promise.all([
+        axios.get(`${API_BASE}/api/agents/${agent._id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get(`${API_BASE}/api/agent-itineraries?agentId=${agent._id}&limit=100`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+      ]);
+      setSelectedAgent({ 
+        ...agentRes.data.data, 
+        assignedItineraries: itiRes.data.data || [] 
+      });
+    } catch (err) {
+      console.error("Error fetching agent details", err);
+      toast.error("Failed to load full agent details");
+      setSelectedAgent(agent);
+    }
+  };
   const handleCloseView = () => { setSelectedAgent(null); };
 
   const handleEditClick = (agent) => {
@@ -380,7 +400,7 @@ const AgentList = () => {
                   <td className="py-3 px-4">{agent.email}</td>
                   <td className="py-3 px-4">{agent.phone}</td>
                   <td className="py-3 px-4 flex gap-3">
-                    <a
+                    {/* <a
                       href={`${PUBLIC_FRONTEND_URL}/verified-transport-details/${agent._id}`}
                       target="_blank"
                       rel="noreferrer"
@@ -388,13 +408,13 @@ const AgentList = () => {
                       title="View Public Profile"
                     >
                       <HiExternalLink size={20} className="cursor-pointer" />
-                    </a>
+                    </a> */}
                     <button className="text-red-600 hover:text-red-800 p-2 rounded" onClick={() => handleView(agent)}>
                       <HiEye size={20} className="cursor-pointer" />
                     </button>
-                    <button className="text-green-600 hover:text-green-800 p-2 rounded" onClick={() => handleEditClick(agent)}>
+                    {/* <button className="text-green-600 hover:text-green-800 p-2 rounded" onClick={() => handleEditClick(agent)}>
                       <HiPencil size={20} className="cursor-pointer" />
-                    </button>
+                    </button> */}
                     <button
                       onClick={() => handleVerify(agent._id, agent.isVerified)}
                       className={`px-3 py-1 rounded text-xs ${agent.isVerified ? "bg-green-500 text-white" : "bg-gray-300 text-black"}`}
@@ -425,20 +445,20 @@ const AgentList = () => {
                   <div className="text-sm text-gray-700"><strong>Email:</strong> {agent.email}</div>
                   <div className="text-sm text-gray-700"><strong>Phone:</strong> {agent.phone}</div>
                   <div className="flex gap-4 mt-2">
-                    <a
+                    {/* <a
                       href={`${PUBLIC_FRONTEND_URL}/verified-transport-details/${agent._id}`}
                       target="_blank"
                       rel="noreferrer"
                       className="text-blue-600 hover:text-blue-800 p-2 rounded"
                     >
                       <HiExternalLink size={20} className="cursor-pointer" />
-                    </a>
+                    </a> */}
                     <button className="text-red-600 hover:text-red-800 p-2 rounded" onClick={() => handleView(agent)}>
                       <HiEye size={20} className="cursor-pointer" />
                     </button>
-                    <button className="text-green-600 hover:text-green-800 p-2 rounded" onClick={() => handleEditClick(agent)}>
+                    {/* <button className="text-green-600 hover:text-green-800 p-2 rounded" onClick={() => handleEditClick(agent)}>
                       <HiPencil size={20} className="cursor-pointer" />
-                    </button>
+                    </button> */}
                     <button
                       onClick={() => handleVerify(agent._id, agent.isVerified)}
                       className={`px-3 py-1 rounded text-xs ${agent.isVerified ? "bg-green-500 text-white" : "bg-gray-300 text-black"}`}
@@ -470,60 +490,163 @@ const AgentList = () => {
               <button className="text-gray-500 hover:text-gray-900" onClick={handleCloseView}>✕</button>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-6 sm:grid-cols-2">
               <ViewRow label="Name" value={getAgentName(selectedAgent)} />
               <ViewRow label="Email" value={selectedAgent.email} />
               <ViewRow label="Phone" value={selectedAgent.phone} />
+              <ViewRow label="WhatsApp" value={selectedAgent.whatsapp} />
               <ViewRow label="Role" value={selectedAgent.role} />
-              <ViewRow label="Active" value={selectedAgent.isActive ? "Yes" : "No"} />
-              <ViewRow label="Verified" value={selectedAgent.isVerified ? "Yes" : "No"} />
-              {selectedAgent.company && <ViewRow label="Company" value={selectedAgent.company} fullWidth />}
+              <ViewRow label="Status" value={selectedAgent.isActive ? "Active" : "Inactive"} />
+              <ViewRow label="Verification" value={selectedAgent.isVerified ? "Verified" : "Unverified"} />
+              <ViewRow label="Company" value={selectedAgent.company} />
+              
               <ViewRow label="Registered Email" value={selectedAgent.registeredEmail} fullWidth />
-              {Array.isArray(selectedAgent.secondaryEmails) && selectedAgent.secondaryEmails.map((email, idx) => (
-                <ViewRow key={idx} label="Secondary Email" value={email} fullWidth />
-              ))}
-              {selectedAgent.photo && (
+              
+              {Array.isArray(selectedAgent.secondaryEmails) && selectedAgent.secondaryEmails.length > 0 && (
                 <div className="sm:col-span-2 space-y-1">
-                  <p className="text-sm text-gray-500">Photo</p>
-                  <img src={selectedAgent.photo} alt="Agent" className="w-16 h-16 rounded-full object-cover border border-gray-200" />
-                </div>
-              )}
-              {selectedAgent.bannerImage && (
-                <div className="sm:col-span-2 space-y-1">
-                  <p className="text-sm text-gray-500">Banner Image</p>
-                  <img src={selectedAgent.bannerImage} alt="Banner" className="w-full h-32 rounded-xl object-cover border border-gray-200" />
-                </div>
-              )}
-              <ViewRow label="Company Address" value={formatAddress(selectedAgent.companyAddress)} fullWidth />
-              {Array.isArray(selectedAgent.branchAddresses) && selectedAgent.branchAddresses.map((addr, idx) => (
-                <ViewRow key={idx} label={`Branch Address ${idx + 1}`} value={formatAddress(addr)} fullWidth />
-              ))}
-              <ViewRow label="Overview" value={selectedAgent.overview} fullWidth />
-              <div className="sm:col-span-2 space-y-1">
-                <p className="text-sm text-gray-500">Photos & Videos</p>
-                {Array.isArray(selectedAgent.agentPhotos) && selectedAgent.agentPhotos.length > 0 ? (
-                  <div className="grid grid-cols-4 gap-2">
-                    {selectedAgent.agentPhotos.map((url, i) => (
-                      /\.(mp4|mov|avi|webm|mkv)/i.test(url)
-                        ? <video key={i} src={url} className="w-full aspect-square object-cover rounded-lg border" muted />
-                        : <img key={i} src={url} alt={`photo-${i}`} className="w-full aspect-square object-cover rounded-lg border" />
+                  <p className="text-sm text-gray-500">Secondary Emails</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedAgent.secondaryEmails.filter(Boolean).map((email, idx) => (
+                      <span key={idx} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-medium border border-blue-100">{email}</span>
                     ))}
                   </div>
-                ) : <p className="font-medium text-gray-900">N/A</p>}
-              </div>
-              <ViewRow label="Tour Packages" value={selectedAgent.tourPackages} fullWidth />
-              <ViewRow label="Quick Info" value={selectedAgent.quickInfo} fullWidth />
-              <ViewRow label="Services" value={selectedAgent.services} fullWidth />
-              <ViewRow label="Reviews" value={selectedAgent.reviews} fullWidth />
-              <ViewRow label="Blog" value={selectedAgent.blog} fullWidth />
-              {selectedAgent.profileCompletedAt && (
-                <ViewRow label="Profile Completed At" value={new Date(selectedAgent.profileCompletedAt).toLocaleString()} fullWidth />
+                </div>
               )}
+
+              {selectedAgent.photo && (
+                <div className="space-y-1">
+                  <p className="text-sm text-gray-500">Profile Photo</p>
+                  <img src={getImageUrl(selectedAgent.photo)} alt="Agent" className="w-20 h-20 rounded-2xl object-cover border border-gray-200 shadow-sm" />
+                </div>
+              )}
+
+              {Array.isArray(selectedAgent.bannerImage) && selectedAgent.bannerImage.length > 0 && (
+                <div className="sm:col-span-2 space-y-2">
+                  <p className="text-sm text-gray-500">Banner Images</p>
+                  <div className="flex flex-wrap gap-3">
+                    {selectedAgent.bannerImage.map((img, i) => (
+                      <img key={i} src={getImageUrl(img)} alt={`Banner-${i}`} className="h-24 w-40 rounded-xl object-cover border border-gray-200 shadow-sm" />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <ViewRow label="Company Address" value={formatAddress(selectedAgent.companyAddress)} fullWidth />
+              
+              {Array.isArray(selectedAgent.branchAddresses) && selectedAgent.branchAddresses.length > 0 && (
+                <div className="sm:col-span-2 space-y-3">
+                  <p className="text-sm text-gray-500">Branch Addresses</p>
+                  <div className="space-y-2">
+                    {selectedAgent.branchAddresses.map((addr, idx) => (
+                      <div key={idx} className="p-3 bg-gray-50 rounded-xl border border-gray-100 text-sm">
+                        <span className="font-bold text-gray-400 mr-2">#{idx+1}</span>
+                        {formatAddress(addr)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <ViewRow label="Overview" value={selectedAgent.overview} fullWidth />
+              
+              <div className="sm:col-span-2 space-y-2">
+                <p className="text-sm text-gray-500">Gallery (Photos & Videos)</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {Array.isArray(selectedAgent.agentPhotos) && selectedAgent.agentPhotos.map((url, i) => (
+                    <img key={`photo-${i}`} src={getImageUrl(url)} alt={`gallery-${i}`} className="w-full aspect-video object-cover rounded-xl border shadow-sm" />
+                  ))}
+                  {Array.isArray(selectedAgent.agentVideos) && selectedAgent.agentVideos.map((url, i) => (
+                    <video key={`video-${i}`} src={getImageUrl(url)} className="w-full aspect-video object-cover rounded-xl border shadow-sm" controls />
+                  ))}
+                  {(!selectedAgent.agentPhotos?.length && !selectedAgent.agentVideos?.length) && <p className="text-sm text-gray-400 italic">No media uploaded</p>}
+                </div>
+              </div>
+
+              <ViewRow label="Services" value={Array.isArray(selectedAgent.services) ? selectedAgent.services.join(", ") : selectedAgent.services} fullWidth />
+              
+              <div className="sm:col-span-2 space-y-3">
+                <p className="text-sm text-gray-500">Live Tour Packages (Itineraries)</p>
+                {selectedAgent.assignedItineraries?.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {selectedAgent.assignedItineraries.map((iti, idx) => (
+                      <div key={idx} className="flex gap-3 p-3 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                        <img 
+                          src={getImageUrl(iti.coverImageUrl)} 
+                          className="w-16 h-16 rounded-xl object-cover" 
+                          alt={iti.title}
+                          onError={(e) => { e.target.src = "https://via.placeholder.com/100?text=Tour"; }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h5 className="text-sm font-bold text-gray-800 truncate">{iti.title}</h5>
+                          <p className="text-[10px] text-red-600 font-semibold">{iti.destination} · {iti.duration}</p>
+                          <p className="text-[10px] text-gray-500 mt-1 font-bold">₹{iti.priceFrom?.toLocaleString() || "On Request"}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <ViewRow label="" value={selectedAgent.tourPackages} fullWidth />
+                )}
+              </div>
+              
+              {Array.isArray(selectedAgent.testimonials) && selectedAgent.testimonials.length > 0 && (
+                <div className="sm:col-span-2 space-y-3">
+                  <p className="text-sm text-gray-500">Customer Testimonials</p>
+                  <div className="grid gap-4">
+                    {selectedAgent.testimonials.map((t, idx) => (
+                      <div key={idx} className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                        <div className="flex items-center gap-3 mb-2">
+                          {t.profile && <img src={getImageUrl(t.profile)} className="w-8 h-8 rounded-full" />}
+                          <span className="font-bold text-sm text-gray-800">{t.name}</span>
+                          <span className="text-xs text-gray-400 ml-auto">{t.date}</span>
+                        </div>
+                        <p className="text-xs text-gray-600 italic">"{t.text}"</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {Array.isArray(selectedAgent.blogs) && selectedAgent.blogs.length > 0 && (
+                <div className="sm:col-span-2 space-y-3">
+                  <p className="text-sm text-gray-500">Travel Stories (Blogs)</p>
+                  <div className="grid gap-4">
+                    {selectedAgent.blogs.map((blog, idx) => (
+                      <div key={idx} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex gap-4">
+                        {blog.image && <img src={getImageUrl(blog.image)} className="w-20 h-20 rounded-xl object-cover" />}
+                        <div className="flex-1">
+                          <h4 className="font-bold text-sm text-gray-800">{blog.title}</h4>
+                          <p className="text-[10px] text-gray-500 line-clamp-2 mt-1">{blog.content?.replace(/<[^>]*>/g, '')}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {Array.isArray(selectedAgent.reviewsList) && selectedAgent.reviewsList.length > 0 && (
+                <div className="sm:col-span-2 space-y-3">
+                  <p className="text-sm text-gray-500">Manual Reviews</p>
+                  <div className="grid gap-3">
+                    {selectedAgent.reviewsList.map((rev, idx) => (
+                      <div key={idx} className="p-3 bg-gray-50 rounded-xl border border-gray-100 text-xs">
+                        <div className="flex justify-between font-bold text-gray-700 mb-1">
+                          <span>{rev.name}</span>
+                          <span className="text-orange-500">{"★".repeat(rev.rating)}</span>
+                        </div>
+                        <p className="text-gray-600">{rev.comment}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <ViewRow label="Quick Info" value={selectedAgent.quickInfo} fullWidth />
               <ViewRow label="Created" value={selectedAgent.createdAt ? new Date(selectedAgent.createdAt).toLocaleString() : "N/A"} fullWidth />
             </div>
 
             <div className="mt-6 flex flex-wrap gap-3">
-              <button className="rounded-xl bg-red-600 px-5 py-3 text-white hover:bg-red-700" onClick={() => handleEditClick(selectedAgent)}>Edit</button>
+              {/* <button className="rounded-xl bg-red-600 px-5 py-3 text-white hover:bg-red-700" onClick={() => handleEditClick(selectedAgent)}>Edit</button> */}
               <button className="rounded-xl bg-red-600 px-5 py-3 text-white hover:bg-red-700" onClick={() => handleDelete(selectedAgent._id)}>Delete</button>
             </div>
           </div>

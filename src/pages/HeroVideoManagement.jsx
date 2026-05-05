@@ -4,6 +4,7 @@ import ProfileButton from '../components/ProfileButton';
 import MediaUploader from '../components/MediaUploader';
 import { getS3Path } from '../utils/pathUtils';
 import { API_BASE } from '../utils/api';
+import toast from 'react-hot-toast';
 
 const HeroVideoManagement = () => {
   const [selectedPage, setSelectedPage] = useState('home');
@@ -42,6 +43,7 @@ const HeroVideoManagement = () => {
         }
       } catch (error) {
         console.error("Failed to fetch hero videos:", error);
+        toast.error("Failed to load hero videos");
       } finally {
         setInitialLoading(false);
       }
@@ -52,7 +54,9 @@ const HeroVideoManagement = () => {
 
   const handleUpload = async (e) => {
     e.preventDefault();
-    if (!videoUrl) { alert("Please upload a video first"); return; }
+    if (!videoUrl) { toast.error("Please upload a video first"); return; }
+    
+    const loadToast = toast.loading("Uploading and setting hero video...");
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
@@ -60,7 +64,6 @@ const HeroVideoManagement = () => {
       const pageTitle = selectedPage.charAt(0).toUpperCase() + selectedPage.slice(1);
       const pageSpecificVideos = uploadedVideos.filter(v => v.page === pageTitle);
 
-      // Call backend API to save hero video to database
       const response = await fetch(`${API_BASE}/api/hero-videos`, {
         method: "POST",
         headers: {
@@ -90,10 +93,10 @@ const HeroVideoManagement = () => {
       
       setUploadedVideos([newVideo, ...uploadedVideos]);
       setVideoUrl('');
-      alert("Video uploaded and set as Hero Video successfully!");
+      toast.success("Hero Video set successfully!", { id: loadToast });
     } catch (error) {
       console.error("Upload error:", error);
-      alert("Error uploading video: " + error.message);
+      toast.error("Error: " + error.message, { id: loadToast });
     } finally {
       setLoading(false);
     }
@@ -101,6 +104,7 @@ const HeroVideoManagement = () => {
 
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this video?")) {
+      const deleteToast = toast.loading("Deleting video...");
       try {
         const token = localStorage.getItem("token");
 
@@ -116,15 +120,16 @@ const HeroVideoManagement = () => {
         }
 
         setUploadedVideos(uploadedVideos.filter(v => v.id !== id));
-        alert("Video deleted successfully!");
+        toast.success("Video deleted successfully!", { id: deleteToast });
       } catch (error) {
         console.error("Delete error:", error);
-        alert("Error deleting video: " + error.message);
+        toast.error("Error: " + error.message, { id: deleteToast });
       }
     }
   };
 
   const toggleVisibility = async (id) => {
+    const toggleToast = toast.loading("Updating visibility...");
     try {
       const token = localStorage.getItem("token");
       const video = uploadedVideos.find(v => v.id === id);
@@ -148,9 +153,10 @@ const HeroVideoManagement = () => {
       setUploadedVideos(uploadedVideos.map(v =>
         v.id === id ? { ...v, visibility: v.visibility === 'Public' ? 'Private' : 'Public' } : v
       ));
+      toast.success("Visibility updated", { id: toggleToast });
     } catch (error) {
       console.error("Toggle visibility error:", error);
-      alert("Error updating visibility: " + error.message);
+      toast.error("Error: " + error.message, { id: toggleToast });
     }
   };
 

@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Swal from "sweetalert2";
-import { HiOutlineTrash, HiOutlinePencilSquare, HiOutlineInformationCircle, HiXMark } from "react-icons/hi2";
-import { HiSave, HiOutlineChatAlt2, HiStar, HiTrash, HiPencil, HiExternalLink, HiUserGroup, HiTrendingUp, HiFilter } from "react-icons/hi";
+import { 
+  HiOutlineTrash, HiOutlinePencilSquare, HiOutlineInformationCircle, HiXMark,
+  HiChevronLeft, HiChevronRight
+} from "react-icons/hi2";
+import { 
+  HiSave, HiStar, HiTrash, HiPencil, HiExternalLink, 
+  HiUserGroup, HiTrendingUp, HiFilter, HiSearch, HiOutlineChatAlt2
+} from "react-icons/hi";
 import { toast } from "../utils/toast";
 import { 
   FaSuitcase, FaClock, FaMapMarkerAlt, FaUser, FaImage, 
   FaInfoCircle, FaListAlt, FaTags, FaImages, FaVideo, 
-  FaBlog, FaQuoteLeft, FaChevronLeft, FaChevronRight , FaStar 
+  FaBlog, FaQuoteLeft, FaChevronLeft, FaChevronRight, FaStar 
 } from "react-icons/fa";
 import ProfileButton from "./ProfileButton";
 import MediaUploader from "./MediaUploader";
@@ -16,15 +22,35 @@ import { getImageUrl, API_BASE, PUBLIC_FRONTEND_URL } from "../utils/api";
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 
-const SectionTitle = ({ title }) => (
-  <div className="border-b border-gray-200 pb-2 mb-6">
-    <h2 className="text-xl font-bold text-blue-700">{title}</h2>
-  </div>
-);
+const QUILL_STYLE = `
+  .ql-container {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 14px !important;
+  }
+  .ql-editor {
+    min-height: 200px;
+    line-height: 1.6;
+    color: #334155;
+  }
+  .ql-toolbar.ql-snow {
+    border-top-left-radius: 1.5rem;
+    border-top-right-radius: 1.5rem;
+    background: #fff;
+    border: 1px solid #f1f5f9 !important;
+    padding: 0.75rem !important;
+  }
+  .ql-container.ql-snow {
+    border: 1px solid #f1f5f9 !important;
+    border-top: none !important;
+    border-bottom-left-radius: 1.5rem;
+    border-bottom-right-radius: 1.5rem;
+    background: transparent;
+  }
+`;
 
-const Field = ({ label, id, name, type = "text", value, onChange, placeholder }) => (
+const Field = ({ label, id, name, type = "text", value, onChange, placeholder, disabled }) => (
   <div className="flex flex-col w-full">
-    <label htmlFor={id} className="text-sm font-medium text-gray-700 mb-1">
+    <label htmlFor={id} className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
       {label}
     </label>
     <input
@@ -33,15 +59,16 @@ const Field = ({ label, id, name, type = "text", value, onChange, placeholder })
       name={name || id}
       value={value}
       onChange={onChange}
+      disabled={disabled}
       placeholder={placeholder || `Enter ${label.toLowerCase()}`}
-      className="border border-gray-300 rounded-lg px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+      className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed"
     />
   </div>
 );
 
-const TextAreaField = ({ label, id, name, rows = 6, value, onChange, placeholder }) => (
+const TextAreaField = ({ label, id, name, rows = 4, value, onChange, placeholder }) => (
   <div className="flex flex-col w-full">
-    <label htmlFor={id} className="text-sm font-medium text-gray-700 mb-1">
+    <label htmlFor={id} className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
       {label}
     </label>
     <textarea
@@ -51,45 +78,34 @@ const TextAreaField = ({ label, id, name, rows = 6, value, onChange, placeholder
       onChange={onChange}
       rows={rows}
       placeholder={placeholder}
-      className="border border-gray-300 rounded-lg px-4 py-3 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+      className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-300 resize-none"
     />
   </div>
 );
 
 const TagInput = ({ label, value, onChange, placeholder }) => {
   const [inputValue, setInputValue] = useState("");
-  const tags = typeof value === "string" ? value.split(",").map(t => t.trim()).filter(t => t !== "") : [];
-
+  const tags = Array.isArray(value) ? value : (typeof value === "string" ? value.split(",").map(t => t.trim()).filter(t => t !== "") : []);
 
   const handleKeyDown = (e) => {
     if ((e.key === "Enter" || e.key === ",") && inputValue.trim()) {
       e.preventDefault();
-      if (!tags.includes(inputValue.trim())) {
-        const newTags = [...tags, inputValue.trim()];
-        onChange(newTags.join(","));
-      }
+      const newTag = inputValue.trim();
+      if (!tags.includes(newTag)) onChange([...tags, newTag]);
       setInputValue("");
     } else if (e.key === "Backspace" && !inputValue && tags.length > 0) {
-      const newTags = tags.slice(0, -1);
-      onChange(newTags.join(","));
+      onChange(tags.slice(0, -1));
     }
-  };
-
-  const removeTag = (tagToRemove) => {
-    const newTags = tags.filter(t => t !== tagToRemove);
-    onChange(newTags.join(","));
   };
 
   return (
     <div className="flex flex-col w-full">
-      <label className="text-sm font-medium text-gray-700 mb-2">
-        {label}
-      </label>
-      <div className="border border-gray-300 rounded-2xl px-4 py-2 w-full focus-within:ring-2 focus-within:ring-blue-500 transition-all bg-white min-h-[100px] flex flex-wrap gap-2 items-start content-start">
+      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">{label}</label>
+      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex flex-wrap gap-2 min-h-[100px] focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:border-blue-500 transition-all">
         {tags.map((tag, idx) => (
-          <span key={idx} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-full text-xs font-bold border border-blue-100">
+          <span key={idx} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-blue-600 rounded-xl text-xs font-black border border-blue-100 shadow-sm">
             {tag}
-            <button type="button" onClick={() => removeTag(tag)} className="hover:text-blue-800">
+            <button type="button" onClick={() => onChange(tags.filter(t => t !== tag))} className="hover:text-red-500 transition-colors">
               <HiXMark size={14} />
             </button>
           </span>
@@ -100,105 +116,62 @@ const TagInput = ({ label, value, onChange, placeholder }) => {
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={tags.length === 0 ? placeholder : "Add more..."}
-          className="flex-1 outline-none py-2 text-sm text-slate-700 bg-transparent min-w-[120px]"
+          className="flex-1 outline-none py-1.5 text-sm font-bold text-slate-700 bg-transparent min-w-[120px]"
         />
       </div>
-      <p className="mt-2 text-[10px] text-slate-400 font-medium italic">Press Enter or comma to add a tag. These will appear as beautiful cards on the profile.</p>
     </div>
   );
 };
 
 const TestimonialEditor = ({ testimonials, onChange, agentName, agentId }) => {
-  const handleAdd = () => {
-    onChange([...testimonials, { name: "", text: "", rating: 5, image: "", profile: "", date: "" }]);
-  };
-  const handleRemove = (idx) => {
-    onChange(testimonials.filter((_, i) => i !== idx));
-  };
-  const handleUpdate = (idx, field, value) => {
-    const updated = testimonials.map((t, i) => i === idx ? { ...t, [field]: value } : t);
-    onChange(updated);
-  };
+  const handleAdd = () => onChange([...testimonials, { name: "", text: "", rating: 5, image: "", profile: "", date: "" }]);
+  const handleRemove = (idx) => onChange(testimonials.filter((_, i) => i !== idx));
+  const handleUpdate = (idx, field, value) => onChange(testimonials.map((t, i) => i === idx ? { ...t, [field]: value } : t));
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-6">
-        {testimonials.map((t, idx) => (
-          <div key={idx} className="border border-gray-200 p-6 rounded-2xl relative bg-white shadow-sm group">
-            <button
-              type="button"
-              onClick={() => handleRemove(idx)}
-              className="absolute top-4 right-4 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold opacity-0 group-hover:opacity-100 transition-all hover:bg-red-100"
-            >
-              Remove
-            </button>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <Field label="Customer Name" value={t.name} onChange={(e) => handleUpdate(idx, "name", e.target.value)} placeholder="e.g. John Doe" />
-              <div className="flex flex-col">
-                <label className="text-xs font-bold text-slate-700 mb-2 uppercase tracking-wider">Date</label>
-                <input
-                  type="date"
-                  value={t.date ? (t.date.includes('-') ? t.date : new Date(t.date).toISOString().split('T')[0]) : ''}
-                  onChange={(e) => handleUpdate(idx, "date", e.target.value)}
-                  className="w-full px-5 py-4 border border-slate-200 rounded-2xl text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all bg-slate-50 font-medium text-slate-700"
-                  style={{ colorScheme: 'light' }}
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <TextAreaField label="Review Text" value={t.text} onChange={(e) => handleUpdate(idx, "text", e.target.value)} rows={3} />
-              </div>
-              <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <MediaUploader
-                  key={`${agentId}-testimonial-image-${idx}`}
-                  label="Trip Image (Drag & Upload)"
-                  existingUrls={t.image ? [t.image] : []}
-                  onChange={(urls) => handleUpdate(idx, "image", urls[0] || "")}
-                  folder={getS3Path.agentTestimonials(agentName)}
-                  baseFileName={`${t.name}-testimonial`}
-                />
-                <MediaUploader
-                  key={`${agentId}-testimonial-avatar-${idx}`}
-                  label="Customer Avatar (Drag & Upload)"
-                  existingUrls={t.profile ? [t.profile] : []}
-                  onChange={(urls) => handleUpdate(idx, "profile", urls[0] || "")}
-                  folder={getS3Path.agentTestimonials(agentName)}
-                  baseFileName={`${t.name}-avatar`}
-                />
-              </div>
+    <div className="space-y-8">
+      {testimonials.map((t, idx) => (
+        <div key={idx} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative group hover:shadow-2xl hover:shadow-blue-500/5 transition-all duration-500">
+          <button onClick={() => handleRemove(idx)} className="absolute top-6 right-6 w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-red-500 hover:text-white transition-all">
+            <HiTrash size={20} />
+          </button>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <Field label="Customer Name" value={t.name} onChange={(e) => handleUpdate(idx, "name", e.target.value)} />
+            <div className="flex flex-col">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Review Date</label>
+              <input type="date" value={t.date ? (t.date.includes('-') ? t.date : new Date(t.date).toISOString().split('T')[0]) : ''} onChange={(e) => handleUpdate(idx, "date", e.target.value)} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 outline-none" />
+            </div>
+            <div className="lg:col-span-2">
+              <TextAreaField label="Review Narrative" value={t.text} onChange={(e) => handleUpdate(idx, "text", e.target.value)} rows={3} />
+            </div>
+            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
+              <MediaUploader label="Trip Photo" existingUrls={t.image ? [t.image] : []} onChange={(urls) => handleUpdate(idx, "image", urls[0] || "")} folder={getS3Path.agentTestimonials(agentName)} />
+              <MediaUploader label="Customer Profile" existingUrls={t.profile ? [t.profile] : []} onChange={(urls) => handleUpdate(idx, "profile", urls[0] || "")} folder={getS3Path.agentTestimonials(agentName)} />
             </div>
           </div>
-        ))}
-      </div>
-      <button
-        type="button"
-        onClick={handleAdd}
-        className="w-full py-4 border-2 border-dashed border-gray-300 rounded-2xl text-gray-500 hover:border-blue-400 hover:text-blue-500 transition-all font-bold bg-white"
-      >
-        + Add New Testimonial
+        </div>
+      ))}
+      <button onClick={handleAdd} className="w-full py-8 border-2 border-dashed border-slate-200 rounded-[2.5rem] text-slate-400 font-black uppercase tracking-[0.2em] text-xs hover:border-blue-500 hover:text-blue-600 transition-all hover:bg-blue-50/30">
+        + Add Curated Testimonial
       </button>
     </div>
   );
 };
 
 const SECTIONS = [
-  { id: "photo", label: "Profile Photo", icon: FaUser },
-  { id: "bannerImage", label: "Banner Image", icon: FaImage },
-  { id: "branchAddresses", label: "Branches", icon: FaMapMarkerAlt },
-  { id: "overview", label: "Overview", icon: FaInfoCircle },
-  { id: "quickInfo", label: "Quick Info", icon: FaListAlt },
-  { id: "services", label: "Services", icon: FaTags },
-  { id: "tourPackages", label: "Packages", icon: FaSuitcase },
-  { id: "agentPhotos", label: "Gallery", icon: FaImages },
-  { id: "agentVideos", label: "Videos", icon: FaVideo },
-  { id: "reviewsList", label: "Reviews", icon: FaStar },
-  { id: "blogs", label: "Blog", icon: FaBlog },
-  { id: "testimonials", label: "Testimonials", icon: FaQuoteLeft },
+  { id: "agencyInfo", label: "Brand Profile", icon: <FaUser />, color: "from-blue-500 to-indigo-600" },
+  { id: "tourPackages", label: "Inventory", icon: <FaSuitcase />, color: "from-emerald-500 to-teal-600" },
+  { id: "reviewsList", label: "Public Feedback", icon: <FaStar />, color: "from-orange-500 to-red-600" },
+  { id: "testimonials", label: "Curated Reviews", icon: <FaQuoteLeft />, color: "from-purple-500 to-fuchsia-600" },
+  { id: "blogs", label: "Media & Blogs", icon: <FaBlog />, color: "from-pink-500 to-rose-600" },
+  { id: "agentPhotos", label: "Agency Gallery", icon: <FaImages />, color: "from-cyan-500 to-blue-600" },
+  { id: "branchAddresses", label: "Locations", icon: <FaMapMarkerAlt />, color: "from-slate-500 to-slate-700" },
 ];
 
 const AgentContentManager = () => {
   const [agents, setAgents] = useState([]);
   const [selectedAgentId, setSelectedAgentId] = useState("");
-  const [selectedSection, setSelectedSection] = useState(SECTIONS[0].id);
+  const [selectedSection, setSelectedSection] = useState("agencyInfo");
   const [agentData, setAgentData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -210,1014 +183,481 @@ const AgentContentManager = () => {
   const [publicReviewsLoading, setPublicReviewsLoading] = useState(false);
   const [showReviewEditModal, setShowReviewEditModal] = useState(false);
   const [editingReview, setEditingReview] = useState(null);
+  const [mediaBusy, setMediaBusy] = useState(false);
+  const [itineraryPage, setItineraryPage] = useState(1);
+  const [reviewPage, setReviewPage] = useState(1);
+  const ITEMS_PER_PAGE = 6;
 
-  useEffect(() => {
-    fetchAgents();
-  }, []);
-
+  useEffect(() => { fetchAgents(); }, []);
   const agentName = agentData ? (agentData.company || `${agentData.firstName} ${agentData.lastName}`) : "unknown";
 
   const fetchAgents = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get(`${API_BASE}/api/agents`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await axios.get(`${API_BASE}/api/agents`, { headers: { Authorization: `Bearer ${token}` } });
       setAgents(res.data.data || []);
-    } catch (err) {
-      console.error("Error fetching agents", err);
-    }
+    } catch (err) { console.error(err); }
   };
 
   useEffect(() => {
-    if (selectedAgentId) {
-      fetchAgentDetails(selectedAgentId);
-    } else {
-      setAgentData(null);
-    }
+    if (selectedAgentId) fetchAgentDetails(selectedAgentId);
+    else setAgentData(null);
   }, [selectedAgentId]);
 
   const fetchAgentDetails = async (id) => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get(`${API_BASE}/api/agents/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = res.data.data;
-      
-      // Auto-migrate old blog data to the new blogs array if needed
-      if ((!data.blogs || data.blogs.length === 0) && data.blogDescription) {
-        data.blogs = [{
-          title: data.blogTitle || "Latest Story",
-          content: data.blogDescription || "",
-          image: data.blogImage || "",
-          isPublished: data.isBlogPublished !== false,
-          createdAt: new Date()
-        }];
-      }
-      
-      setAgentData(data);
-    } catch (err) {
-      console.error("Error fetching agent details", err);
-    } finally {
-      setLoading(false);
-    }
+      const res = await axios.get(`${API_BASE}/api/agents/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      setAgentData(res.data.data);
+    } catch (err) { console.error(err); } finally { setLoading(false); }
   };
 
   const fetchItineraries = async (agentId) => {
     setItinerariesLoading(true);
     try {
-      const res = await axios.get(`${API_BASE}/api/agent-itineraries?agentId=${agentId}`);
+      const token = localStorage.getItem("token");
+      const res = await axios.get(`${API_BASE}/api/agent-itineraries?agentId=${agentId}`, { headers: { Authorization: `Bearer ${token}` } });
       setItineraries(res.data.data || []);
-    } catch (err) {
-      console.error("Error fetching itineraries", err);
-    } finally {
-      setItinerariesLoading(false);
-    }
+    } catch (err) { console.error(err); } finally { setItinerariesLoading(false); }
   };
-
-  useEffect(() => {
-    if (selectedAgentId && selectedSection === "tourPackages") {
-      fetchItineraries(selectedAgentId);
-    }
-    if (selectedAgentId && selectedSection === "reviewsList") {
-      fetchPublicReviews(selectedAgentId);
-    }
-  }, [selectedAgentId, selectedSection]);
 
   const fetchPublicReviews = async (agentId) => {
     setPublicReviewsLoading(true);
     try {
       const token = localStorage.getItem("token");
-      // Since our API currently gets ALL reviews, we filter here or update API
-      const res = await axios.get(`${API_BASE}/api/agents/all/reviews`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      // Filter for this specific agent
-      const agentIdToFilter = agentId?._id || agentId;
-      const filtered = (res.data.data || []).filter(r => r.agentId === agentIdToFilter || r.agentId?._id === agentIdToFilter);
-      setPublicReviews(filtered);
-    } catch (err) {
-      console.error("Error fetching public reviews", err);
-    } finally {
-      setPublicReviewsLoading(false);
+      const res = await axios.get(`${API_BASE}/api/agents/all/reviews`, { headers: { Authorization: `Bearer ${token}` } });
+      const idToFilter = agentId?._id || agentId;
+      setPublicReviews((res.data.data || []).filter(r => r.agentId === idToFilter || r.agentId?._id === idToFilter));
+    } catch (err) { console.error(err); } finally { setPublicReviewsLoading(false); }
+  };
+
+  useEffect(() => {
+    if (selectedAgentId && selectedSection === "tourPackages") {
+      fetchItineraries(selectedAgentId);
+      setItineraryPage(1);
     }
-  };
-
-  const deletePublicReview = async (reviewId) => {
-    const result = await Swal.fire({
-      title: "Delete Public Review?",
-      text: "This review was submitted by a user. Are you sure you want to delete it?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#ef4444",
-      confirmButtonText: "Yes, delete it"
-    });
-
-    if (result.isConfirmed) {
-      try {
-        const token = localStorage.getItem("token");
-        await axios.delete(`${API_BASE}/api/agents/reviews/${reviewId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        toast.success("Public review removed!");
-        fetchPublicReviews(selectedAgentId);
-      } catch (err) {
-        toast.error("Failed to delete review");
-      }
+    if (selectedAgentId && selectedSection === "reviewsList") {
+      fetchPublicReviews(selectedAgentId);
+      setReviewPage(1);
     }
-  };
-
-  const handleUpdateField = (field, value) => {
-    setAgentData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleBranchAddressChange = (index, e) => {
-    const { name, value } = e.target;
-    const newAddresses = [...(agentData.branchAddresses || [])];
-    newAddresses[index] = { ...newAddresses[index], [name]: value };
-    handleUpdateField("branchAddresses", newAddresses);
-  };
-
-  const addBranchAddress = () => {
-    const newAddresses = [...(agentData.branchAddresses || []), { houseNo: "", street: "", area: "", city: "", state: "", postalCode: "", country: "" }];
-    handleUpdateField("branchAddresses", newAddresses);
-  };
-
-  const removeBranchAddress = (index) => {
-    const newAddresses = (agentData.branchAddresses || []).filter((_, i) => i !== index);
-    handleUpdateField("branchAddresses", newAddresses);
-  };
+  }, [selectedAgentId, selectedSection]);
 
   const handleSave = async () => {
     if (!selectedAgentId || !agentData) return;
     setSaving(true);
     try {
       const token = localStorage.getItem("token");
-      let payload = { [selectedSection]: agentData[selectedSection] };
-
-      await axios.put(`${API_BASE}/api/agents/${selectedAgentId}`, payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const sectionKey = selectedSection === "agencyInfo" ? "overview" : selectedSection;
+      let payload = { [sectionKey]: agentData[sectionKey] };
+      if (selectedSection === "agencyInfo") {
+        payload = { 
+          company: agentData.company, 
+          description: agentData.description, 
+          phone: agentData.phone, 
+          email: agentData.email,
+          photo: agentData.photo,
+          bannerImage: agentData.bannerImage,
+          overview: agentData.overview
+        };
+      }
+      await axios.put(`${API_BASE}/api/agents/${selectedAgentId}`, payload, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success("Profile section updated successfully!");
       fetchAgentDetails(selectedAgentId);
-      const sectionLabel = SECTIONS.find(s => s.id === selectedSection)?.label || selectedSection;
-      toast.success(`${sectionLabel} updated successfully!`);
-    } catch (err) {
-      console.error("Error saving section", err);
-      toast.error("Error saving section");
-    } finally {
-      setSaving(false);
-    }
+    } catch (err) { toast.error("Error saving section"); } finally { setSaving(false); }
   };
 
   const renderSectionEditor = () => {
-    if (!agentData) return (
-      <div className="flex flex-col items-center justify-center py-20 text-gray-400 bg-white rounded-3xl border-2 border-dashed border-gray-100">
-        <HiOutlineInformationCircle size={48} className="mb-4" />
-        <p className="text-lg font-medium">Please select an agent to begin editing</p>
-      </div>
-    );
+    if (!agentData) return null;
 
     switch (selectedSection) {
-      case "photo":
-        return (
-          <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
-            <MediaUploader
-              key={`${selectedAgentId}-photo`}
-              label="Agent Logo / Profile Photo (Drag & Upload)"
-              existingUrls={agentData.photo ? [agentData.photo] : []}
-              onChange={(urls) => handleUpdateField("photo", urls[0] || "")}
-              folder={getS3Path.agentProfile(agentName)}
-              baseFileName={`${agentName}-logo`}
-            />
-            <p className="mt-4 text-[10px] text-slate-400 font-medium italic">This logo appears in the circular profile area on the public page.</p>
-          </div>
-        );
-      case "bannerImage":
-        return (
-          <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
-            <MediaUploader
-              key={`${selectedAgentId}-banner`}
-              label="Agent Profile Banners (Drag & Upload Multiple)"
-              maxFiles={10}
-              existingUrls={Array.isArray(agentData.bannerImage) ? agentData.bannerImage : (agentData.bannerImage ? [agentData.bannerImage] : [])}
-              onChange={(urls) => handleUpdateField("bannerImage", urls)}
-              folder={getS3Path.agentBanner(agentName)}
-              baseFileName={`${agentName}-banner`}
-            />
-            <p className="mt-4 text-[10px] text-slate-400 font-medium italic">These banners appear as a carousel background on the agent's public profile. You can upload up to 10 images.</p>
-          </div>
-        );
-      case "branchAddresses":
-        return (
-          <div className="space-y-8">
-            {(agentData.branchAddresses || []).map((addr, idx) => (
-              <div key={idx} className="border border-gray-200 p-8 rounded-2xl relative bg-white shadow-sm">
-                <button type="button" onClick={() => removeBranchAddress(idx)} className="absolute top-4 right-4 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition-all">Remove Branch</button>
-                <h4 className="text-sm font-bold mb-6 text-blue-600 uppercase tracking-widest">Branch Location {idx + 1}</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <Field label="House / Flat No." name="houseNo" value={addr.houseNo} onChange={(e) => handleBranchAddressChange(idx, e)} />
-                  <Field label="Street" name="street" value={addr.street} onChange={(e) => handleBranchAddressChange(idx, e)} />
-                  <Field label="Area / Locality" name="area" value={addr.area} onChange={(e) => handleBranchAddressChange(idx, e)} />
-                  <Field label="City" name="city" value={addr.city} onChange={(e) => handleBranchAddressChange(idx, e)} />
-                  <Field label="State" name="state" value={addr.state} onChange={(e) => handleBranchAddressChange(idx, e)} />
-                  <Field label="Postal Code" name="postalCode" value={addr.postalCode} onChange={(e) => handleBranchAddressChange(idx, e)} />
-                  <div className="sm:col-span-2">
-                    <Field label="Country" name="country" value={addr.country} onChange={(e) => handleBranchAddressChange(idx, e)} />
-                  </div>
-                </div>
-              </div>
-            ))}
-            <button type="button" onClick={addBranchAddress} className="w-full py-5 border-2 border-dashed border-gray-300 rounded-2xl text-gray-500 hover:border-blue-400 hover:text-blue-500 transition-all font-bold bg-white">
-              + Add New Branch Office
-            </button>
-          </div>
-        );
-      case "overview":
-        return <TextAreaField label="Agent Professional Overview" value={agentData.overview || ""} onChange={(e) => handleUpdateField("overview", e.target.value)} placeholder="Tell the world about this travel agent..." />;
-      case "quickInfo":
-        return <TextAreaField label="Quick Facts & Information" value={agentData.quickInfo || ""} onChange={(e) => handleUpdateField("quickInfo", e.target.value)} placeholder="Key bullet points or summary..." />;
-      case "services":
-        return <TagInput label="Services & Highlights (Tags)" value={agentData.services || ""} onChange={(val) => handleUpdateField("services", val)} placeholder="e.g. Flight Booking, Visa Assistance, Custom Tours..." />;
-      case "tourPackages":
-        return (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center mb-2">
-              <p className="text-sm text-slate-500 font-medium italic">These itineraries are assigned specifically to this agent. You can manage them here.</p>
-            </div>
-
-            {itinerariesLoading ? (
-              <div className="flex items-center justify-center py-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
-            ) : itineraries.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-3xl border-2 border-dashed border-slate-100">
-                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <FaSuitcase className="text-slate-300" size={24} />
-                </div>
-                <h3 className="text-slate-900 font-bold mb-1">No Itineraries Found</h3>
-                <p className="text-slate-400 text-xs">Assign an itinerary to this agent from the 'Add Itineraries' section.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                {itineraries.map((it) => (
-                  <div key={it._id} className="group bg-white border border-slate-100 rounded-2xl p-3 sm:p-4 hover:shadow-xl hover:shadow-blue-500/5 transition-all relative overflow-hidden">
-                    <div className="flex flex-col xs:flex-row gap-3 sm:gap-4">
-                      <div className="w-full xs:w-20 h-32 xs:h-20 rounded-xl bg-slate-100 overflow-hidden flex-shrink-0">
-                        <img src={it.coverImageUrl || "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=200&auto=format&fit=crop"} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                      </div>
-                      <div className="flex-1 min-w-0 flex flex-col justify-center">
-                        <div className="flex justify-between items-start">
-                          <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md text-[9px] font-black uppercase tracking-widest mb-1">
-                            {it.type}
-                          </span>
-                          <div className="flex gap-1 xs:hidden">
-                            <button onClick={() => { setSelectedItinerary(it); setShowEditModal(true); }} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><HiOutlinePencilSquare size={16} /></button>
-                            <button className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg"><HiOutlineTrash size={16} /></button>
-                          </div>
-                        </div>
-                        <h4 className="font-bold text-slate-900 text-sm truncate mb-1">{it.title}</h4>
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-slate-400 font-medium">
-                          <span className="flex items-center gap-1"><FaMapMarkerAlt size={10} className="text-blue-500" /> {it.destination}</span>
-                          <span className="flex items-center gap-1"><FaClock size={10} className="text-blue-500" /> {it.duration}</span>
-                        </div>
-                        <div className="mt-2 text-blue-600 font-bold text-xs">₹{it.discountedPrice || it.priceFrom}</div>
-                      </div>
-                      <div className="hidden xs:flex flex-col gap-1">
-                        <button
-                          onClick={() => { setSelectedItinerary(it); setShowEditModal(true); }}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Edit"
-                        >
-                          <HiOutlinePencilSquare size={18} />
-                        </button>
-                        <button
-                          onClick={async () => {
-                            if (window.confirm("Delete this itinerary for this agent?")) {
-                              try {
-                                const token = localStorage.getItem("token");
-                                await axios.delete(`${API_BASE}/api/agent-itineraries/${it.slug}`, {
-                                  headers: { Authorization: `Bearer ${token}` }
-                                });
-                                toast.success("Itinerary deleted");
-                                fetchItineraries(selectedAgentId);
-                              } catch (e) { toast.error("Error deleting"); }
-                            }
-                          }}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete"
-                        >
-                          <HiOutlineTrash size={18} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Edit Modal - Rendered at bottom of component */}
-          </div>
-        );
-      case "agentPhotos":
-        return (
-          <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
-            <MediaUploader
-              key={`${selectedAgentId}-gallery`}
-              label="Agent Gallery (Photos & Videos)"
-              maxFiles={50}
-              existingUrls={Array.isArray(agentData.agentPhotos) ? agentData.agentPhotos : []}
-              onChange={(urls) => handleUpdateField("agentPhotos", urls)}
-              folder={getS3Path.agentGallery(agentName)}
-              baseFileName={`${agentName}-gallery`}
-            />
-            <p className="mt-4 text-[10px] text-slate-400 font-medium italic">These files reflect in the 'Guest Memories & Media' section on your public profile.</p>
-          </div>
-        );
-      case "agentVideos":
-        return (
-          <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
-            <MediaUploader
-              key={`${selectedAgentId}-videos`}
-              label="Customer Video Testimonials (Drag & Upload MP4)"
-              existingUrls={Array.isArray(agentData.agentVideos) ? agentData.agentVideos : []}
-              onChange={(urls) => handleUpdateField("agentVideos", urls)}
-              folder={getS3Path.agentVideos(agentName)}
-              baseFileName={`${agentName}-video`}
-            />
-            <p className="mt-4 text-[10px] text-slate-400 font-medium italic">These videos will appear in the 'Videos' section of your public profile under Happy Travelers.</p>
-          </div>
-        );
-      case "reviewsList":
-        const reviews = Array.isArray(agentData.reviewsList) ? agentData.reviewsList : [];
-        
-        // Calculate stats for public reviews
-        const publicStats = {
-          total: publicReviews.length,
-          avg: publicReviews.length > 0 
-            ? (publicReviews.reduce((acc, curr) => acc + curr.rating, 0) / publicReviews.length).toFixed(1)
-            : "0.0",
-          fiveStars: publicReviews.filter(r => r.rating === 5).length
-        };
-
+      case "agencyInfo":
         return (
           <div className="space-y-10 animate-fadeIn">
-            {/* --- Manual Reviews Section --- */}
-            <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full -mr-16 -mt-16 opacity-50"></div>
-              <div className="flex justify-between items-center mb-8 relative z-10">
-                <div>
-                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">Manual Reviews</h3>
-                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Directly added by administrator</p>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-1 space-y-8">
+                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col items-center">
+                  <MediaUploader label="Official Agency Logo" maxFiles={1} existingUrls={[agentData.photo].filter(Boolean)} onChange={(urls) => setAgentData({...agentData, photo: urls[0]})} folder={getS3Path.agentProfile(agentName)} />
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-4 text-center leading-relaxed">Identity for public listing</p>
                 </div>
-                <button 
-                  onClick={() => {
-                    const newReviews = [{ name: "", rating: 5, comment: "", date: new Date().toISOString() }, ...reviews];
-                    handleUpdateField("reviewsList", newReviews);
-                  }}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20 active:scale-95 flex items-center gap-2"
-                >
-                  <span className="text-lg">+</span> Add Review
-                </button>
-              </div>
-
-              <div className="space-y-6 relative z-10">
-                {reviews.map((rev, idx) => (
-                  <div key={idx} className="p-6 bg-slate-50/50 rounded-3xl border border-slate-100 relative group hover:border-blue-200 transition-all">
-                    <button 
-                      onClick={() => {
-                        const filtered = reviews.filter((_, i) => i !== idx);
-                        handleUpdateField("reviewsList", filtered);
-                      }}
-                      className="absolute top-4 right-4 w-8 h-8 rounded-xl bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100"
-                    >
-                      <HiTrash size={16} />
-                    </button>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Reviewer Name</label>
-                        <input
-                          type="text"
-                          value={rev.name || ""}
-                          onChange={(e) => {
-                            const updated = [...reviews];
-                            updated[idx].name = e.target.value;
-                            handleUpdateField("reviewsList", updated);
-                          }}
-                          className="w-full px-5 py-3 bg-white border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700"
-                          placeholder="e.g. John Doe"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Rating</label>
-                        <div className="relative">
-                          <select
-                            value={rev.rating || 5}
-                            onChange={(e) => {
-                              const updated = [...reviews];
-                              updated[idx].rating = parseInt(e.target.value);
-                              handleUpdateField("reviewsList", updated);
-                            }}
-                            className="w-full px-5 py-3 bg-white border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 font-bold text-slate-700 appearance-none cursor-pointer"
-                          >
-                            {[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{n} Stars</option>)}
-                          </select>
-                          <HiStar className="absolute right-4 top-1/2 -translate-y-1/2 text-orange-400 pointer-events-none" />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Review Content</label>
-                      <textarea
-                        value={rev.comment || ""}
-                        onChange={(e) => {
-                          const updated = [...reviews];
-                          updated[idx].comment = e.target.value;
-                          handleUpdateField("reviewsList", updated);
-                        }}
-                        className="w-full px-5 py-3 bg-white border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 min-h-[100px] text-slate-600 font-medium"
-                        placeholder="Write the review content here..."
-                      />
-                    </div>
+                <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden group shadow-2xl">
+                  <div className="absolute -top-10 -right-10 w-40 h-40 bg-blue-600/20 blur-3xl group-hover:bg-blue-600/40 transition-all duration-700"></div>
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 mb-6 relative z-10">Inventory Health</h4>
+                  <div className="space-y-6 relative z-10">
+                    <div className="flex justify-between items-end"><span className="text-slate-400 text-xs font-bold uppercase tracking-widest">Active Packages</span><span className="text-3xl font-black text-white">{itineraries.length}</span></div>
+                    <div className="flex justify-between items-end"><span className="text-slate-400 text-xs font-bold uppercase tracking-widest">Public Reviews</span><span className="text-3xl font-black text-white">{publicReviews.length}</span></div>
                   </div>
-                ))}
-                {reviews.length === 0 && (
-                  <div className="text-center py-12 bg-slate-50/50 rounded-3xl border-2 border-dashed border-slate-100 flex flex-col items-center gap-3">
-                    <HiOutlineChatAlt2 className="text-slate-200" size={40} />
-                    <p className="text-slate-400 text-sm font-bold uppercase tracking-widest">No manual reviews added</p>
-                  </div>
-                )}
+                </div>
               </div>
+              <div className="lg:col-span-2 space-y-8">
+                <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm space-y-6">
+                  <div className="flex items-center gap-4 mb-4"><div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600"><FaInfoCircle size={24} /></div><div><h3 className="text-xl font-black text-slate-900 tracking-tight">Core Credentials</h3><p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Global Agency Identity</p></div></div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <Field label="Agency Name" value={agentData.company} onChange={(e) => setAgentData({...agentData, company: e.target.value})} />
+                    <Field label="Headline" placeholder="Expert in Luxury Tours" value={agentData.description} onChange={(e) => setAgentData({...agentData, description: e.target.value})} />
+                    <Field label="Primary Contact" value={agentData.phone} onChange={(e) => setAgentData({...agentData, phone: e.target.value})} />
+                    <Field label="Support Email" value={agentData.email} onChange={(e) => setAgentData({...agentData, email: e.target.value})} />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm space-y-6">
+              <div className="flex items-center gap-4 mb-4"><div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600"><FaListAlt size={24} /></div><div><h3 className="text-xl font-black text-slate-900 tracking-tight">Professional Narrative</h3><p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Formatted Overview & History</p></div></div>
+              <div className="prose-slate max-w-none"><ReactQuill theme="snow" value={agentData.overview || ""} onChange={(val) => setAgentData({...agentData, overview: val})} className="bg-slate-50 rounded-[2rem] overflow-hidden border-none" style={{ minHeight: '300px' }} /></div>
             </div>
-
-            {/* --- Public User Reviews Section --- */}
-            <div className="pt-10">
-              <div className="flex flex-col lg:flex-row lg:items-end justify-between mb-8 gap-6">
-                <div>
-                  <div className="flex items-center gap-4 mb-2">
-                    <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-orange-200">
-                      <HiOutlineChatAlt2 size={24} />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-black text-slate-900 tracking-tight">Public Feedback</h3>
-                      <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-0.5">Reviews submitted via public profile</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Local Stats for Public Reviews */}
-                <div className="flex gap-4">
-                  <div className="bg-white px-5 py-3 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
-                    <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
-                      <HiUserGroup size={16} />
-                    </div>
-                    <div>
-                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Total</p>
-                      <p className="text-sm font-black text-slate-900">{publicStats.total}</p>
-                    </div>
-                  </div>
-                  <div className="bg-white px-5 py-3 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
-                    <div className="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center text-orange-600">
-                      <HiStar size={16} />
-                    </div>
-                    <div>
-                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Rating</p>
-                      <p className="text-sm font-black text-slate-900">{publicStats.avg}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {publicReviewsLoading ? (
-                <div className="flex flex-col items-center justify-center py-20 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm">
-                  <div className="w-12 h-12 border-4 border-orange-100 border-t-orange-600 rounded-full animate-spin mb-4"></div>
-                  <p className="text-slate-400 font-black uppercase tracking-[0.2em] text-[10px]">Loading Feedback...</p>
-                </div>
-              ) : publicReviews.length === 0 ? (
-                <div className="bg-white rounded-[2.5rem] p-16 text-center border-2 border-dashed border-slate-100">
-                  <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <HiOutlineChatAlt2 className="text-slate-200" size={32} />
-                  </div>
-                  <h3 className="text-xl font-black text-slate-900 mb-2">No Public Reviews</h3>
-                  <p className="text-slate-400 max-w-xs mx-auto text-xs font-bold uppercase tracking-widest">Start by sharing your profile with customers!</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {publicReviews.map((rev) => (
-                    <div key={rev._id} className="group bg-white p-7 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-500 relative flex flex-col">
-                      <div className="flex items-start justify-between mb-6">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-300 font-black text-lg border border-slate-100 group-hover:bg-orange-600 group-hover:text-white group-hover:border-transparent transition-all duration-300">
-                            {rev.userName.charAt(0)}
-                          </div>
-                          <div>
-                            <h4 className="font-black text-slate-900 text-sm tracking-tight uppercase">{rev.userName}</h4>
-                            <div className="flex items-center gap-2 mt-1">
-                              <div className="flex gap-0.5">
-                                {[...Array(5)].map((_, i) => (
-                                  <HiStar key={i} size={10} className={i < rev.rating ? "text-orange-400" : "text-slate-100"} />
-                                ))}
-                              </div>
-                              <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
-                                {new Date(rev.createdAt).toLocaleDateString("en-US", { day: 'numeric', month: 'short' })}
-                              </span>
-                            </div>
-                          </div>
+            <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm"><MediaUploader label="Public Brand Banners & Gallery" existingUrls={agentData.bannerImage} onChange={(urls) => setAgentData({...agentData, bannerImage: urls})} folder={getS3Path.agentProfile(agentName)} /></div>
+          </div>
+        );
+      case "tourPackages":
+        return (
+          <div className="space-y-10 animate-fadeIn">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+              <div><h3 className="text-2xl font-black text-slate-900 tracking-tight">Travel Inventory</h3><p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Manage assigned itineraries & custom packages</p></div>
+              <button onClick={() => fetchItineraries(selectedAgentId)} className="px-10 py-4 bg-slate-900 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] hover:bg-blue-600 transition-all shadow-xl shadow-slate-200 flex items-center gap-3">
+                <HiTrendingUp className="text-blue-400" /> Refresh Storefront
+              </button>
+            </div>
+            {itinerariesLoading ? (
+              <div className="flex flex-col items-center justify-center py-24 gap-6"><div className="w-16 h-16 border-[6px] border-blue-50 border-t-blue-600 rounded-full animate-spin"></div><p className="text-slate-400 font-black text-xs uppercase tracking-widest">Synchronizing Packages...</p></div>
+            ) : itineraries.length === 0 ? (
+              <div className="bg-white rounded-[3rem] p-24 text-center border-2 border-dashed border-slate-100"><div className="w-24 h-24 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto mb-8 text-slate-300"><FaSuitcase size={48} /></div><h3 className="text-2xl font-black text-slate-900 mb-2">No Active Packages</h3><p className="text-slate-400 text-sm font-medium">Link global itineraries to this agent to build their inventory.</p></div>
+            ) : (
+              <div className="space-y-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-10">
+                  {itineraries.slice((itineraryPage - 1) * ITEMS_PER_PAGE, itineraryPage * ITEMS_PER_PAGE).map((it) => (
+                    <div key={it._id} className="group bg-white rounded-[3rem] border border-slate-100 overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-3 transition-all duration-700 flex flex-col">
+                      <div className="relative h-64 overflow-hidden">
+                        <img src={getImageUrl(it.coverImageUrl)} className="w-full h-full object-cover group-hover:scale-110 transition-all duration-1000" alt="" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent"></div>
+                        <div className="absolute top-6 left-6 flex gap-3">
+                          <span className="px-4 py-2 bg-white/90 backdrop-blur-md rounded-2xl text-[10px] font-black text-slate-900 uppercase tracking-widest shadow-xl">{it.type}</span>
+                          {it.visibility === "Public" && <span className="px-4 py-2 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-emerald-500/20">Active</span>}
                         </div>
-                        <div className="flex gap-2">
-                           <button 
-                            onClick={() => {
-                              setEditingReview(rev);
-                              setShowReviewEditModal(true);
-                            }}
-                            className="w-9 h-9 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center hover:bg-orange-600 hover:text-white transition-all shadow-sm"
-                            title="Edit Review"
-                          >
-                            <HiPencil size={16} />
-                          </button>
-                          <button 
-                            onClick={() => deletePublicReview(rev._id)}
-                            className="w-9 h-9 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm"
-                            title="Delete Review"
-                          >
-                            <HiTrash size={16} />
-                          </button>
+                        <div className="absolute bottom-6 left-6 right-6">
+                          <div className="flex items-center gap-2 text-blue-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2"><FaMapMarkerAlt /> {it.destination}</div>
+                          <h4 className="text-xl font-black text-white leading-tight line-clamp-2">{it.title}</h4>
                         </div>
                       </div>
-
-                      <div className="flex-1">
-                        <p className="text-slate-600 text-[13px] italic leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity">
-                          "{rev.comment}"
-                        </p>
-                      </div>
-
-                      {rev.images && rev.images.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-5">
-                          {rev.images.map((img, idx) => (
-                            <img 
-                              key={idx} 
-                              src={getImageUrl(img)} 
-                              alt="Review" 
-                              className="w-12 h-12 object-cover rounded-xl border border-slate-100 hover:scale-105 transition-transform cursor-pointer"
-                            />
-                          ))}
+                      <div className="p-8 flex-1 flex flex-col">
+                        <div className="grid grid-cols-2 gap-6 mb-8">
+                          <div className="flex flex-col"><span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Timeframe</span><span className="text-sm font-black text-slate-900 flex items-center gap-2"><FaClock className="text-blue-500" /> {it.duration}</span></div>
+                          <div className="flex flex-col"><span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Valuation</span><span className="text-sm font-black text-emerald-600">{it.asBestQuote ? "Best Quote" : `₹${it.discountedPrice || it.priceFrom}`}</span></div>
                         </div>
-                      )}
-                      
-                      <div className="mt-6 w-full h-1 bg-slate-50 rounded-full overflow-hidden">
-                        <div className="w-0 group-hover:w-full h-full bg-gradient-to-r from-orange-400 to-red-500 transition-all duration-1000"></div>
+                        <div className="flex gap-4 mt-auto">
+                          <button onClick={() => { setSelectedItinerary(it); setShowEditModal(true); }} className="flex-1 bg-blue-600 text-white px-6 py-4 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20 flex items-center justify-center gap-3"><HiOutlinePencilSquare size={18} /> Edit Detailed Package</button>
+                          <button onClick={() => window.open(`${PUBLIC_FRONTEND_URL}/itinerary/${it.slug}`, "_blank")} className="w-14 h-14 bg-slate-50 text-slate-400 rounded-[1.5rem] flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all border border-slate-100 shadow-sm"><HiExternalLink size={24} /></button>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
-              )}
+                
+                {/* Itinerary Pagination Controls */}
+                {itineraries.length > ITEMS_PER_PAGE && (
+                  <div className="flex justify-center items-center gap-3 py-6">
+                    <button 
+                      onClick={() => setItineraryPage(p => Math.max(1, p - 1))}
+                      disabled={itineraryPage === 1}
+                      className="w-12 h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:border-blue-600 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+                    >
+                      <FaChevronLeft size={14} />
+                    </button>
+                    <div className="flex gap-2">
+                      {[...Array(Math.ceil(itineraries.length / ITEMS_PER_PAGE))].map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setItineraryPage(i + 1)}
+                          className={`w-12 h-12 rounded-2xl font-black text-xs transition-all shadow-sm ${
+                            itineraryPage === i + 1 
+                              ? "bg-slate-900 text-white shadow-xl shadow-slate-200 scale-110" 
+                              : "bg-white text-slate-500 hover:bg-slate-50 border border-slate-100"
+                          }`}
+                        >
+                          {i + 1}
+                        </button>
+                      ))}
+                    </div>
+                    <button 
+                      onClick={() => setItineraryPage(p => Math.min(Math.ceil(itineraries.length / ITEMS_PER_PAGE), p + 1))}
+                      disabled={itineraryPage === Math.ceil(itineraries.length / ITEMS_PER_PAGE)}
+                      className="w-12 h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:border-blue-600 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
+                    >
+                      <FaChevronRight size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      case "reviewsList":
+        return (
+          <div className="space-y-10 animate-fadeIn">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-1 space-y-6">
+                 <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-orange-50 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-1000"></div>
+                    <h3 className="text-xl font-black text-slate-900 mb-1 relative z-10">Feedback Center</h3>
+                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-8 relative z-10">Real-time user submissions</p>
+                    <div className="space-y-6 relative z-10">
+                      <div className="flex justify-between items-center"><span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Total Reviews</span><span className="text-2xl font-black text-slate-900">{publicReviews.length}</span></div>
+                      <div className="flex justify-between items-center"><span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Avg Rating</span><span className="text-2xl font-black text-orange-500">{(publicReviews.reduce((a,c)=>a+c.rating,0)/Math.max(1, publicReviews.length)).toFixed(1)} <FaStar className="inline mb-1" size={16} /></span></div>
+                    </div>
+                 </div>
+              </div>
+              <div className="lg:col-span-2 space-y-8">
+                 {publicReviewsLoading ? <div className="animate-pulse space-y-4">{[1,2].map(i=><div key={i} className="h-40 bg-slate-100 rounded-[2rem]"></div>)}</div> : publicReviews.length === 0 ? <div className="text-center py-20 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200"><HiOutlineChatAlt2 className="mx-auto text-slate-200 mb-4" size={40} /><p className="text-slate-400 font-black uppercase text-[10px] tracking-widest">No customer reviews yet</p></div> : (
+                   <div className="space-y-6">
+                     {publicReviews.slice((reviewPage - 1) * ITEMS_PER_PAGE, reviewPage * ITEMS_PER_PAGE).map(rev => (
+                       <div key={rev._id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all group">
+                         <div className="flex justify-between items-start mb-6">
+                           <div className="flex items-center gap-4">
+                             <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center font-black text-slate-300 border border-slate-100 group-hover:bg-blue-600 group-hover:text-white transition-all">{rev.userName.charAt(0)}</div>
+                             <div><h4 className="font-black text-slate-900 text-sm uppercase tracking-tight">{rev.userName}</h4><div className="flex gap-0.5 mt-1">{[...Array(5)].map((_,i)=><FaStar key={i} size={10} className={i < rev.rating ? "text-orange-400" : "text-slate-100"} />)}</div></div>
+                           </div>
+                           <button onClick={() => deletePublicReview(rev._id)} className="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"><HiTrash size={18} /></button>
+                         </div>
+                         <p className="text-slate-600 text-sm italic leading-relaxed">"{rev.comment}"</p>
+                       </div>
+                     ))}
+
+                     {/* Review Pagination Controls */}
+                     {publicReviews.length > ITEMS_PER_PAGE && (
+                        <div className="flex justify-center items-center gap-3 pt-4">
+                          <button 
+                            onClick={() => setReviewPage(p => Math.max(1, p - 1))}
+                            disabled={reviewPage === 1}
+                            className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-orange-600 hover:border-orange-600 transition-all disabled:opacity-30 shadow-sm"
+                          >
+                            <FaChevronLeft size={12} />
+                          </button>
+                          <div className="flex gap-2">
+                            {[...Array(Math.ceil(publicReviews.length / ITEMS_PER_PAGE))].map((_, i) => (
+                              <button
+                                key={i}
+                                onClick={() => setReviewPage(i + 1)}
+                                className={`w-10 h-10 rounded-xl font-black text-[10px] transition-all ${
+                                  reviewPage === i + 1 
+                                    ? "bg-slate-900 text-white shadow-lg" 
+                                    : "bg-white text-slate-500 border border-slate-100"
+                                }`}
+                              >
+                                {i + 1}
+                              </button>
+                            ))}
+                          </div>
+                          <button 
+                            onClick={() => setReviewPage(p => Math.min(Math.ceil(publicReviews.length / ITEMS_PER_PAGE), p + 1))}
+                            disabled={reviewPage === Math.ceil(publicReviews.length / ITEMS_PER_PAGE)}
+                            className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-orange-600 hover:border-orange-600 transition-all disabled:opacity-30 shadow-sm"
+                          >
+                            <FaChevronRight size={12} />
+                          </button>
+                        </div>
+                      )}
+                   </div>
+                 )}
+              </div>
             </div>
           </div>
         );
       case "blogs":
-        const blogs = agentData.blogs || [];
-        
-        const handleBlogUpdate = (idx, field, val) => {
-          const updatedBlogs = [...blogs];
-          updatedBlogs[idx] = { ...updatedBlogs[idx], [field]: val };
-          handleUpdateField("blogs", updatedBlogs);
-        };
-        const addNewBlog = () => {
-          handleUpdateField("blogs", [...blogs, { title: "", content: "", image: "", isPublished: true, createdAt: new Date() }]);
-        };
-        const removeBlog = (idx) => {
-          if (window.confirm("Are you sure you want to delete this travel story? This cannot be undone.")) {
-            handleUpdateField("blogs", blogs.filter((_, i) => i !== idx));
-          }
-        };
-
         return (
-          <div className="space-y-6 animate-fadeIn">
-            {blogs.map((blog, idx) => (
-              <div key={idx} className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-6 relative group">
-                <button 
-                  onClick={() => removeBlog(idx)}
-                  className="absolute top-6 right-6 p-2.5 text-slate-400 hover:text-white hover:bg-red-500 transition-all bg-slate-50 rounded-2xl shadow-sm group"
-                  title="Delete Story"
-                >
-                  <HiOutlineTrash size={22} />
-                </button>
-
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="w-8 h-8 rounded-xl bg-red-50 text-red-600 flex items-center justify-center text-xs font-black">
-                    {idx + 1}
-                  </span>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Story #{idx + 1}</span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Blog Title</label>
-                    <input
-                      type="text"
-                      placeholder="Enter Blog Title"
-                      value={blog.title || ""}
-                      onChange={(e) => handleBlogUpdate(idx, "title", e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-red-500/20 focus:border-red-600 outline-none transition-all font-medium bg-slate-50"
-                    />
+          <div className="space-y-8 animate-fadeIn">
+            <div className="flex justify-between items-center bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+              <div><h3 className="text-2xl font-black text-slate-900 tracking-tight">Content Studio</h3><p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Manage travel stories & agency news</p></div>
+              <button onClick={() => setAgentData({...agentData, blogs: [{title: "", content: "", image: "", isPublished: true, createdAt: new Date()}, ...(agentData.blogs || [])]})} className="px-10 py-4 bg-purple-600 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] hover:bg-purple-700 transition-all shadow-xl shadow-purple-200">+ New Story</button>
+            </div>
+            <div className="grid grid-cols-1 gap-10">
+              {(agentData.blogs || []).map((blog, idx) => (
+                <div key={idx} className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm hover:shadow-2xl transition-all duration-500">
+                  <div className="flex justify-between items-center mb-8">
+                    <span className="px-4 py-2 bg-purple-50 text-purple-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-purple-100">Draft #{idx + 1}</span>
+                    <button onClick={() => setAgentData({...agentData, blogs: agentData.blogs.filter((_,i)=>i!==idx)})} className="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"><HiTrash size={18} /></button>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Visibility</label>
-                    <select 
-                      value={blog.isPublished !== false ? "Public" : "Private"}
-                      onChange={(e) => handleBlogUpdate(idx, "isPublished", e.target.value === "Public")}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-red-500/20 focus:border-red-600 outline-none bg-slate-50 font-medium cursor-pointer"
-                    >
-                      <option value="Public">Public</option>
-                      <option value="Private">Private / Draft</option>
-                    </select>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                    <div className="space-y-8">
+                       <Field label="Blog Title" value={blog.title} onChange={(e) => { const n = [...agentData.blogs]; n[idx].title = e.target.value; setAgentData({...agentData, blogs: n}); }} />
+                       <MediaUploader label="Feature Image" existingUrls={blog.image ? [blog.image] : []} onChange={(urls) => { const n = [...agentData.blogs]; n[idx].image = urls[0]; setAgentData({...agentData, blogs: n}); }} folder={getS3Path.agentBlogs(agentName)} />
+                    </div>
+                    <div className="space-y-4">
+                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Article Content</label>
+                       <ReactQuill theme="snow" value={blog.content} onChange={(val) => { const n = [...agentData.blogs]; n[idx].content = val; setAgentData({...agentData, blogs: n}); }} className="bg-slate-50 rounded-3xl overflow-hidden border-none" style={{ minHeight: '300px' }} />
+                    </div>
                   </div>
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Cover Image</label>
-                  <MediaUploader
-                    key={`${selectedAgentId}-blog-${idx}`}
-                    label=""
-                    maxFiles={1}
-                    existingUrls={blog.image ? [blog.image] : []}
-                    onChange={(urls) => handleBlogUpdate(idx, "image", urls[0] || "")}
-                    folder={getS3Path.blog(agentName, blog.title)}
-                    baseFileName={blog.title || `blog-${idx}`}
-                  />
-                </div>
-
-                <div className="space-y-4">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">Blog Content</label>
-                  <div className="quill-wrapper">
-                    <ReactQuill
-                      theme="snow"
-                      value={blog.content || ""}
-                      onChange={(val) => handleBlogUpdate(idx, "content", val)}
-                      style={{ height: '250px', marginBottom: '50px' }}
-                      placeholder="Share your travel story..."
-                      className="bg-white rounded-xl"
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            <button
-              type="button"
-              onClick={addNewBlog}
-              className="w-full py-8 border-2 border-dashed border-slate-200 rounded-[2.5rem] text-slate-400 hover:border-red-600 hover:text-red-600 hover:bg-red-50/30 transition-all font-black uppercase tracking-widest flex flex-col items-center gap-2"
-            >
-              <span className="text-2xl">+</span>
-              <span className="text-[10px]">Add New Travel Story</span>
-            </button>
-            
-            <p className="mt-4 text-[10px] text-slate-400 font-medium italic text-center">Don't forget to click "Save Changes" at the bottom after adding your stories.</p>
+              ))}
+            </div>
           </div>
         );
       case "testimonials":
+        return <TestimonialEditor testimonials={agentData.testimonials || []} onChange={(val) => setAgentData({...agentData, testimonials: val})} agentName={agentName} agentId={selectedAgentId} />;
+      case "agentPhotos":
+        return <div className="bg-white p-12 rounded-[3rem] border border-slate-100 shadow-sm"><MediaUploader label="Agency Gallery Portfolio" existingUrls={agentData.agentPhotos} onChange={(urls) => setAgentData({...agentData, agentPhotos: urls})} folder={getS3Path.agentGallery(agentName)} maxFiles={50} /></div>;
+      case "branchAddresses":
         return (
-          <TestimonialEditor
-            testimonials={agentData.testimonials || []}
-            onChange={(updated) => handleUpdateField("testimonials", updated)}
-            agentName={agentName}
-            agentId={selectedAgentId}
-          />
+          <div className="space-y-8 animate-fadeIn">
+             {(agentData.branchAddresses || []).map((addr, idx) => (
+               <div key={idx} className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm relative group hover:border-slate-300 transition-all">
+                  <button onClick={() => removeBranchAddress(idx)} className="absolute top-6 right-6 w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"><HiTrash size={20} /></button>
+                  <h4 className="text-xs font-black text-blue-600 uppercase tracking-[0.2em] mb-10">Operational Branch #{idx + 1}</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                     <Field label="Building / No." name="houseNo" value={addr.houseNo} onChange={(e) => handleBranchAddressChange(idx, e)} />
+                     <Field label="Street / Landmark" name="street" value={addr.street} onChange={(e) => handleBranchAddressChange(idx, e)} />
+                     <Field label="Area" name="area" value={addr.area} onChange={(e) => handleBranchAddressChange(idx, e)} />
+                     <Field label="City" name="city" value={addr.city} onChange={(e) => handleBranchAddressChange(idx, e)} />
+                     <Field label="Postal Code" name="postalCode" value={addr.postalCode} onChange={(e) => handleBranchAddressChange(idx, e)} />
+                     <Field label="Country" name="country" value={addr.country} onChange={(e) => handleBranchAddressChange(idx, e)} />
+                  </div>
+               </div>
+             ))}
+             <button onClick={addBranchAddress} className="w-full py-10 border-2 border-dashed border-slate-200 rounded-[3rem] text-slate-400 font-black uppercase tracking-[0.2em] text-[10px] hover:border-blue-500 hover:text-blue-600 transition-all hover:bg-blue-50/30">+ Register New Office Location</button>
+          </div>
         );
-      default:
-        return null;
+      default: return null;
     }
   };
 
   return (
-    <>
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          height: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(220, 38, 38, 0.05);
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(220, 38, 38, 0.2);
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(220, 38, 38, 0.4);
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.4s ease-out;
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
-
-      <div className="w-full min-h-screen bg-[#f8fafc] pb-20">
-        {/* Modern Header */}
-        <div className="bg-white border-b border-gray-200 sticky top-0 z-50 px-4 sm:px-8 py-4 mb-6">
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+    <div className="min-h-screen bg-[#F8FAFC] pb-24 selection:bg-blue-100 selection:text-blue-900">
+      <style>{QUILL_STYLE}</style>
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-[60] backdrop-blur-md bg-white/90">
+        <div className="max-w-[1700px] mx-auto px-8 lg:px-12 h-24 flex items-center justify-between">
+          <div className="flex items-center gap-10">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-red-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-red-200">
-                <HiOutlineInformationCircle size={28} />
-              </div>
-              <div>
-                <h1 className="text-xl font-black text-slate-900 leading-tight">Agent Content Manager</h1>
-                <p className="text-[11px] text-slate-500 font-bold uppercase tracking-widest">Premium Profile Management</p>
-              </div>
+              <div className="w-12 h-12 bg-gradient-to-br from-red-600 to-blue-700 rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-blue-200"><FaUser size={20} /></div>
+              <div><h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Content Manager</h1><p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1.5">Elite Administrative Control</p></div>
             </div>
-
-            <div className="flex items-center gap-4 w-full md:w-auto">
-              <div className="relative flex-1 md:w-72">
-                <select
-                  value={selectedAgentId}
-                  onChange={(e) => setSelectedAgentId(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-red-500/10 focus:border-red-500 outline-none transition-all appearance-none"
-                >
-                  <option value="">Select Agent to Edit</option>
-                  {agents.map((agent) => (
-                    <option key={agent._id} value={agent._id}>
-                      {agent.company || `${agent.firstName} ${agent.lastName}`}
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                  <i className="fas fa-chevron-down text-xs"></i>
-                </div>
-              </div>
-              
-              {agentData && (
-                <>
-                  {selectedAgentId && (
-                    <a
-                      href={`${PUBLIC_FRONTEND_URL}/verified-transport-details/${selectedAgentId}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center gap-2 px-6 py-4 bg-white text-slate-900 font-bold rounded-2xl hover:bg-slate-50 transition-all border border-slate-200 shadow-sm"
-                    >
-                      <HiExternalLink size={20} className="text-blue-500" />
-                      View Public Profile
-                    </a>
-                  )}
-                  
-                  <button
-                    onClick={handleSave}
-                    disabled={saving || !selectedAgentId}
-                    className="flex items-center gap-2 px-8 py-4 bg-slate-900 text-white font-bold rounded-2xl hover:bg-black transition-all shadow-xl disabled:opacity-50 disabled:cursor-not-allowed group"
-                  >
-                    <HiSave size={20} className="group-hover:scale-110 transition-transform" />
-                    {saving ? "Saving..." : "Save Changes"}
-                  </button>
-                </>
-              )}
-              <ProfileButton />
+            <div className="hidden md:flex items-center bg-slate-50 border border-slate-200 rounded-[1.5rem] px-6 py-3 gap-4 focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:border-blue-500 transition-all min-w-[380px]">
+              <HiSearch className="text-slate-400" size={20} />
+              <select className="bg-transparent border-none outline-none text-sm font-black text-slate-700 w-full cursor-pointer appearance-none" value={selectedAgentId} onChange={(e) => setSelectedAgentId(e.target.value)}>
+                <option value="">Select Authorized Partner...</option>
+                {agents.map(a => <option key={a._id} value={a._id}>{a.company || `${a.firstName} ${a.lastName}`}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="flex items-center gap-6">
+            {selectedAgentId && (
+              <button onClick={handleSave} disabled={saving} className="px-10 py-4 bg-gradient-to-r from-red-600 to-blue-700 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] hover:shadow-2xl hover:shadow-blue-200 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-3">
+                {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <HiSave size={20} />}
+                {saving ? "Synchronizing..." : "Save Brand Profile"}
+              </button>
+            )}
+            <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 border border-slate-200 overflow-hidden shadow-sm">
+               {agentData?.photo ? <img src={getImageUrl(agentData.photo)} className="w-full h-full object-cover" /> : <FaUser size={24} />}
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Horizontal Navigation Tabs */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-2 mb-8 sticky top-24 z-40">
-            <div className="flex overflow-x-auto gap-2 p-1 custom-scrollbar scroll-smooth">
-              {SECTIONS.map((sec) => {
-                const Icon = sec.icon;
-                return (
-                  <button
-                    key={sec.id}
-                    onClick={() => setSelectedSection(sec.id)}
-                    className={`
-                      flex items-center gap-2.5 px-5 py-3 rounded-xl font-bold text-xs whitespace-nowrap transition-all
-                      ${selectedSection === sec.id
-                        ? "bg-red-600 text-white shadow-md shadow-red-100 scale-105"
-                        : "text-slate-500 hover:bg-slate-50 hover:text-red-600"
-                      }
-                    `}
-                  >
-                    <Icon size={16} />
-                    <span>{sec.label}</span>
+      <div className="max-w-[1700px] mx-auto px-8 lg:px-12 pt-12">
+        <div className="grid grid-cols-12 gap-12">
+          <div className="col-span-12 lg:col-span-3">
+            <div className="bg-white rounded-[3rem] border border-slate-200 shadow-sm overflow-hidden sticky top-36">
+              <div className="p-10 border-b border-slate-100 bg-slate-50/50"><h3 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-1.5">Command Center</h3><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Sectional Management</p></div>
+              <div className="p-4 space-y-2">
+                {SECTIONS.map(section => (
+                  <button key={section.id} onClick={() => setSelectedSection(section.id)} className={`w-full flex items-center justify-between p-5 rounded-[1.5rem] transition-all group relative overflow-hidden ${selectedSection === section.id ? "bg-slate-900 text-white shadow-2xl shadow-slate-300" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`}>
+                    <div className="flex items-center gap-5 relative z-10">
+                      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${selectedSection === section.id ? `bg-gradient-to-br ${section.color} text-white shadow-lg` : "bg-slate-100 text-slate-400 group-hover:bg-white"}`}>{section.icon}</div>
+                      <span className="font-black text-xs uppercase tracking-[0.1em]">{section.label}</span>
+                    </div>
+                    {selectedSection === section.id && <div className="w-1.5 h-6 bg-blue-500 rounded-full relative z-10 shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>}
                   </button>
-                );
-              })}
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Main Content Area */}
-          <div className="animate-fadeIn">
-            {loading ? (
-              <div className="flex flex-col items-center justify-center py-40">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-red-500 border-t-transparent mb-4"></div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fetching Content...</p>
-              </div>
-            ) : !selectedAgentId ? (
-              <div className="flex flex-col items-center justify-center py-32 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100">
-                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-6">
-                  <FaUser size={32} />
-                </div>
-                <h3 className="text-xl font-black text-slate-900 mb-2">No Agent Selected</h3>
-                <p className="text-slate-400 text-sm font-medium max-w-xs text-center leading-relaxed">
-                  Please choose an agent from the top bar to manage their profile and additional information.
-                </p>
+          <div className="col-span-12 lg:col-span-9">
+            {!selectedAgentId ? (
+              <div className="bg-white rounded-[4rem] border border-slate-200 shadow-sm p-32 flex flex-col items-center justify-center text-center">
+                <div className="w-24 h-24 bg-blue-50 rounded-[2.5rem] flex items-center justify-center text-blue-600 mb-10 animate-bounce shadow-2xl shadow-blue-100"><FaUser size={48} /></div>
+                <h3 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">Partner Access Restricted</h3>
+                <p className="text-slate-400 text-sm font-medium max-w-sm leading-relaxed mx-auto uppercase tracking-widest">Select a verified travel partner to begin brand synchronization.</p>
               </div>
             ) : (
-              <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden min-h-[500px]">
-                <div className="bg-slate-50/50 px-8 py-6 border-b border-slate-100 flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <div className="w-1.5 h-6 bg-red-600 rounded-full"></div>
-                    <h2 className="text-xl font-black text-slate-900 tracking-tight">
-                      {SECTIONS.find(s => s.id === selectedSection)?.label}
-                    </h2>
-                  </div>
-                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
-                    Step 2 of 2
-                  </div>
-                </div>
-                
-                <div className="p-8">
-                  {renderSectionEditor()}
-                </div>
+              <div className="space-y-12">
+                 <div className="flex items-center justify-between"><div className="flex items-center gap-6"><div className={`w-3 h-12 rounded-full bg-gradient-to-b ${SECTIONS.find(s => s.id === selectedSection)?.color} shadow-lg`}></div><div><h2 className="text-4xl font-black text-slate-900 tracking-tight leading-none">{SECTIONS.find(s => s.id === selectedSection)?.label}</h2><p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-3">Active Workspace · Profile Integrity Monitoring</p></div></div></div>
+                 {renderSectionEditor()}
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Edit Modal */}
+      {/* Edit Itinerary Modal */}
       {showEditModal && selectedItinerary && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white rounded-[2rem] w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-100">
-            <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
-                  <FaSuitcase size={24} />
-                </div>
-                <div>
-                  <h3 className="text-xl font-black text-slate-900">Edit Itinerary</h3>
-                  <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Customize package details</p>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-md">
+          <div className="bg-white rounded-[3.5rem] w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-100 animate-scaleUp">
+            <div className="p-10 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <div className="flex items-center gap-6">
+                <div className="w-16 h-16 bg-blue-600 rounded-[1.5rem] flex items-center justify-center text-white shadow-2xl shadow-blue-200"><FaSuitcase size={32} /></div>
+                <div><h3 className="text-2xl font-black text-slate-900 tracking-tight">Refine Itinerary</h3><p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Package Calibration & Logistics</p></div>
+              </div>
+              <button onClick={() => setShowEditModal(false)} className="w-14 h-14 bg-white border border-slate-200 rounded-2xl flex items-center justify-center text-slate-400 hover:text-slate-900 hover:border-slate-900 transition-all shadow-sm"><HiXMark size={28} /></button>
+            </div>
+            <div className="p-10 overflow-y-auto space-y-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <Field label="Package Title" value={selectedItinerary.title} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, title: e.target.value })} />
+                <Field label="Travel Duration" value={selectedItinerary.duration} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, duration: e.target.value })} />
+                <Field label="Primary Destination" value={selectedItinerary.destination} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, destination: e.target.value })} />
+                <div className="grid grid-cols-2 gap-6">
+                  <Field label="Standard Rate" type="number" value={selectedItinerary.priceFrom} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, priceFrom: e.target.value })} />
+                  <Field label="Offer Rate" type="number" value={selectedItinerary.discountedPrice} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, discountedPrice: e.target.value })} />
                 </div>
               </div>
-              <button onClick={() => setShowEditModal(false)} className="p-3 hover:bg-white rounded-2xl transition-all shadow-sm border border-transparent hover:border-slate-200 text-slate-400 hover:text-slate-900">
-                <HiXMark size={24} />
-              </button>
-            </div>
-
-            <div className="p-8 overflow-y-auto space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <Field label="Title" value={selectedItinerary.title} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, title: e.target.value })} />
-                <Field label="Duration" value={selectedItinerary.duration} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, duration: e.target.value })} />
-                <Field label="Destination" value={selectedItinerary.destination} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, destination: e.target.value })} />
-                <div className="grid grid-cols-2 gap-4">
-                  <Field label="Price (₹)" type="number" value={selectedItinerary.priceFrom} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, priceFrom: e.target.value })} />
-                  <Field label="Discounted (₹)" type="number" value={selectedItinerary.discountedPrice} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, discountedPrice: e.target.value })} />
+              <div className="p-10 bg-slate-50 rounded-[3rem] border border-slate-100"><MediaUploader label="Itinerary Visual Assets" existingUrls={selectedItinerary.gallery || [selectedItinerary.coverImageUrl].filter(Boolean)} onChange={(urls) => setSelectedItinerary({ ...selectedItinerary, gallery: urls, coverImageUrl: urls[0] || "" })} onBusy={setMediaBusy} folder={getS3Path.itinerary(agentName, selectedItinerary.title)} /></div>
+              <div className="space-y-10">
+                <TextAreaField label="Executive Summary" rows={6} value={selectedItinerary.destinationDetail || selectedItinerary.shortDescription} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, destinationDetail: e.target.value, shortDescription: e.target.value })} />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                  <TextAreaField label="Inclusions" value={Array.isArray(selectedItinerary.inclusions) ? selectedItinerary.inclusions.join(", ") : selectedItinerary.inclusions} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, inclusions: e.target.value })} />
+                  <TextAreaField label="Exclusions" value={Array.isArray(selectedItinerary.exclusions) ? selectedItinerary.exclusions.join(", ") : selectedItinerary.exclusions} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, exclusions: e.target.value })} />
                 </div>
-
-                <div className="flex flex-col">
-                  <label className="text-xs font-bold text-slate-700 mb-2 uppercase tracking-wider">Departure Date</label>
-                  <div className="relative group">
-                    <input
-                      type="date"
-                      value={selectedItinerary.departureDate ? new Date(selectedItinerary.departureDate).toISOString().split('T')[0] : ''}
-                      onChange={(e) => setSelectedItinerary({ ...selectedItinerary, departureDate: e.target.value })}
-                      className="w-full px-5 py-4 border border-slate-200 rounded-2xl text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all bg-slate-50 font-medium text-slate-700 appearance-none"
-                      style={{ colorScheme: 'light' }}
-                    />
-                    <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 group-hover:text-blue-500 transition-colors">
-                      <FaClock size={16} />
+                {(!selectedItinerary.dayPlans || selectedItinerary.dayPlans.length === 0) ? (
+                  <div className="text-center py-20 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
+                    <p className="text-slate-400 font-black uppercase tracking-widest text-[10px] mb-6">No day-by-day logistics added</p>
+                    <button onClick={() => setSelectedItinerary({ ...selectedItinerary, dayPlans: [{ day: 1, title: "Day 1", locationDetail: "" }] })} className="px-12 py-5 bg-blue-600 text-white rounded-[2rem] font-black uppercase tracking-widest text-xs shadow-2xl shadow-blue-500/20">+ Initialize Day Plans</button>
+                  </div>
+                ) : (
+                  <div className="bg-blue-50/30 p-10 rounded-[3rem] border border-blue-100 space-y-8">
+                    <div className="flex justify-between items-center"><h4 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-3"><FaClock className="text-blue-600" /> Itinerary Timeline ({selectedItinerary.dayPlans.length} Days)</h4><button onClick={() => setSelectedItinerary({ ...selectedItinerary, dayPlans: [...selectedItinerary.dayPlans, { day: selectedItinerary.dayPlans.length + 1, title: `Day ${selectedItinerary.dayPlans.length + 1}`, locationDetail: "" }] })} className="px-6 py-2.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl">+ Add Segment</button></div>
+                    <div className="space-y-6">
+                      {selectedItinerary.dayPlans.map((plan, i) => (
+                        <div key={i} className="bg-white p-8 rounded-[2rem] border border-blue-100 shadow-sm relative group">
+                          <button onClick={() => setSelectedItinerary({ ...selectedItinerary, dayPlans: selectedItinerary.dayPlans.filter((_, idx) => idx !== i).map((p, idx) => ({ ...p, day: idx + 1 })) })} className="absolute top-4 right-4 w-8 h-8 bg-red-50 text-red-500 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"><HiXMark size={16} /></button>
+                          <div className="flex gap-6">
+                            <span className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-sm font-black flex-shrink-0 shadow-lg shadow-blue-200">D{plan.day}</span>
+                            <div className="flex-1 space-y-3">
+                              <input className="w-full font-black text-slate-900 outline-none text-lg bg-transparent border-b-2 border-transparent focus:border-blue-500 transition-all" value={plan.title} onChange={(e) => { const n = [...selectedItinerary.dayPlans]; n[i].title = e.target.value; setSelectedItinerary({...selectedItinerary, dayPlans: n}); }} />
+                              <textarea className="w-full text-sm text-slate-500 outline-none bg-transparent resize-none leading-relaxed" rows={2} value={plan.locationDetail} onChange={(e) => { const n = [...selectedItinerary.dayPlans]; n[i].locationDetail = e.target.value; setSelectedItinerary({...selectedItinerary, dayPlans: n}); }} />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                  <p className="mt-2 text-[10px] text-slate-400 font-medium italic">Click the icon or field to open the calendar picker.</p>
-                </div>
-
-                <div className="p-1">
-                  <MediaUploader
-                    label="Itinerary Cover & Gallery (Drag & Upload)"
-                    existingUrls={selectedItinerary.gallery || [selectedItinerary.coverImageUrl].filter(Boolean)}
-                    onChange={(urls) => setSelectedItinerary({ ...selectedItinerary, gallery: urls, coverImageUrl: urls[0] || "" })}
-                    folder={getS3Path.itinerary(agentName, selectedItinerary.title)}
-                    baseFileName={selectedItinerary.title}
-                  />
-                </div>
+                )}
               </div>
-              <TextAreaField label="Description" rows={4} value={selectedItinerary.shortDescription || selectedItinerary.destinationDetail} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, shortDescription: e.target.value })} />
-              <TextAreaField label="Inclusions (comma separated)" rows={3} value={Array.isArray(selectedItinerary.inclusions) ? selectedItinerary.inclusions.join(", ") : selectedItinerary.inclusions} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, inclusions: e.target.value })} />
-              <TextAreaField label="Exclusions (comma separated)" rows={3} value={Array.isArray(selectedItinerary.exclusions) ? selectedItinerary.exclusions.join(", ") : selectedItinerary.exclusions} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, exclusions: e.target.value })} />
             </div>
-
-            <div className="p-8 bg-slate-50/50 border-t border-slate-100 flex justify-end gap-4">
-              <button onClick={() => setShowEditModal(false)} className="px-8 py-4 text-slate-500 font-bold hover:text-slate-900 transition-colors uppercase tracking-widest text-xs">Cancel</button>
-              <button
-                onClick={async () => {
-                  try {
-                    const token = localStorage.getItem("token");
-                    await axios.put(`${API_BASE}/api/agent-itineraries/${selectedItinerary.slug}`, selectedItinerary, {
-                      headers: { Authorization: `Bearer ${token}` }
-                    });
-                    toast.success("Itinerary updated successfully!");
-                    setShowEditModal(false);
-                    fetchItineraries(selectedAgentId);
-                  } catch (e) { toast.error("Error updating itinerary"); }
-                }}
-                className="px-10 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:bg-blue-700 transition-all shadow-xl shadow-blue-200 active:scale-95"
-              >
-                Update Itinerary
+            <div className="p-10 bg-slate-50/50 border-t border-slate-100 flex justify-end gap-6">
+              <button onClick={() => setShowEditModal(false)} className="px-10 py-5 text-slate-400 font-black uppercase tracking-widest text-[10px] hover:text-slate-900 transition-colors">Abort Changes</button>
+              <button disabled={itineraryUpdating || mediaBusy} onClick={async () => {
+                setItineraryUpdating(true);
+                try {
+                  const token = localStorage.getItem("token");
+                  await axios.put(`${API_BASE}/api/agent-itineraries/${selectedItinerary.slug}`, selectedItinerary, { headers: { Authorization: `Bearer ${token}` } });
+                  toast.success("Inventory segment updated!"); setShowEditModal(false); fetchItineraries(selectedAgentId);
+                } catch (e) { toast.error("Sync Failure"); } finally { setItineraryUpdating(false); }
+              }} className="px-12 py-5 bg-slate-900 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] text-[10px] hover:bg-blue-600 transition-all shadow-2xl disabled:opacity-50 flex items-center gap-4">
+                {(itineraryUpdating || mediaBusy) && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>}
+                {mediaBusy ? "Processing Assets..." : itineraryUpdating ? "Synchronizing..." : "Commit Update"}
               </button>
             </div>
           </div>
         </div>
       )}
-
-      {/* Public Review Edit Modal */}
-      {showReviewEditModal && editingReview && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white rounded-[2.5rem] w-full max-w-xl shadow-2xl overflow-hidden border border-slate-100 animate-fadeIn">
-            <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-orange-50/30">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-orange-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-orange-200">
-                  <HiOutlineChatAlt2 size={24} />
-                </div>
-                <div>
-                  <h3 className="text-xl font-black text-slate-900 tracking-tight">Edit Public Review</h3>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Update visitor feedback</p>
-                </div>
-              </div>
-              <button onClick={() => setShowReviewEditModal(false)} className="p-3 hover:bg-white rounded-2xl transition-all shadow-sm border border-transparent hover:border-slate-200 text-slate-400 hover:text-slate-900">
-                <HiXMark size={24} />
-              </button>
-            </div>
-
-            <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">User Name</label>
-                  <input
-                    type="text"
-                    value={editingReview.userName}
-                    onChange={(e) => setEditingReview({ ...editingReview, userName: e.target.value })}
-                    className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 font-bold text-slate-700"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Rating</label>
-                  <select
-                    value={editingReview.rating}
-                    onChange={(e) => setEditingReview({ ...editingReview, rating: parseInt(e.target.value) })}
-                    className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 font-bold text-slate-700 appearance-none cursor-pointer"
-                  >
-                    {[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{n} Stars</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Review Comment</label>
-                <textarea
-                  value={editingReview.comment}
-                  onChange={(e) => setEditingReview({ ...editingReview, comment: e.target.value })}
-                  rows={4}
-                  className="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 font-medium text-slate-600 leading-relaxed"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Review Images</label>
-                <div className="p-1">
-                  <MediaUploader
-                    label="Drop or Select Images"
-                    maxFiles={10}
-                    accept="image/*"
-                    existingUrls={editingReview.images || []}
-                    onChange={(urls) => setEditingReview({ ...editingReview, images: urls })}
-                    folder={getS3Path.agentGallery(agentName)}
-                    baseFileName={`${editingReview.userName}-review`}
-                  />
-                </div>
-                <p className="text-[9px] text-slate-400 font-medium italic text-center">Manage photos shared by this user.</p>
-              </div>
-            </div>
-
-            <div className="p-8 bg-slate-50/50 border-t border-slate-100 flex justify-end gap-4">
-              <button onClick={() => setShowReviewEditModal(false)} className="px-6 py-3 text-slate-400 font-black uppercase tracking-widest text-[10px] hover:text-slate-900 transition-colors">Cancel</button>
-              <button
-                onClick={async () => {
-                  try {
-                    const token = localStorage.getItem("token");
-                    await axios.put(`${API_BASE}/api/agents/reviews/${editingReview._id}`, editingReview, {
-                      headers: { Authorization: `Bearer ${token}` }
-                    });
-                    toast.success("Review updated successfully!");
-                    setShowReviewEditModal(false);
-                    fetchPublicReviews(selectedAgentId);
-                  } catch (e) { toast.error("Error updating review"); }
-                }}
-                className="px-10 py-4 bg-orange-600 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:bg-orange-700 transition-all shadow-xl shadow-orange-200 active:scale-95"
-              >
-                Update Review
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+    </div>
   );
 };
 
