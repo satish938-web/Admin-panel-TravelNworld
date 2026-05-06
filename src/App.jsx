@@ -18,6 +18,7 @@ import ProfileButton from "./components/ProfileButton";
 import Additineraries from "./components/AddItineraries";
 import AddUserForm from "./components/AddUserForm";
 import Enquiry from "./components/Enquiry";
+import AgentLeads from "./pages/AgentLeads";
 import Itinerary from "./pages/Itinerary";
 import HomeTopBanner from "./pages/HomeTopBanner";
 import CreateDestination from "./pages/CreateDestination";
@@ -108,6 +109,8 @@ const App = () => {
                 <div className="lg:ml-[280px] pt-6 px-4 sm:px-6 md:px-10 bg-[#f8fafc] min-h-screen">
                   <Routes>
                     <Route path="/" element={<AdminDashboard />} />
+                    <Route path="/enquries" element={<Enquiry />} />
+                    <Route path="/agent-leads" element={<AgentLeads />} />
                     <Route path="/allusers" element={<UserList />} />
                     <Route path="/adduser" element={<AddUserForm />} />
                     <Route path="/allagents" element={<AgentList />} />

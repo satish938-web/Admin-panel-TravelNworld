@@ -14,6 +14,9 @@ export default function AdminDashboard() {
     successRate: "99%"
   });
   const [loading, setLoading] = useState(true);
+  
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const isAgent = user.role === "AGENT";
 
   useEffect(() => {
     createParticles();
@@ -250,36 +253,41 @@ export default function AdminDashboard() {
 
           {/* Stats Grid - Responsive */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12">
+            {!isAgent && (
+              <>
+                <Link
+                  to={"/allusers"}
+                  className="stat-card-before bg-white/90 backdrop-blur-[15px] border border-red-600/20 rounded-[20px] p-6 sm:p-8 text-center transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:scale-[1.02] hover:shadow-[0_15px_35px_rgba(220,38,38,0.15)]"
+                >
+                  <div className="text-4xl sm:text-5xl text-red-600 mb-3 sm:mb-4">
+                    <i className="fas fa-users"></i>
+                  </div>
+                  <span className="text-[2rem] sm:text-[2.5rem] font-extrabold text-red-600 block mb-2">
+                    {loading ? <span className="animate-pulse opacity-20">...</span> : stats.totalAdmins}
+                  </span>
+                  <div className="text-sm sm:text-base text-gray-500 font-medium">
+                    Total Employees
+                  </div>
+                </Link>
+                <Link
+                  to={"/allagents"}
+                  className="stat-card-before bg-white/90 backdrop-blur-[15px] border border-red-600/20 rounded-[20px] p-6 sm:p-8 text-center transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:scale-[1.02] hover:shadow-[0_15px_35px_rgba(37,99,235,0.15)]"
+                >
+                  <div className="text-4xl sm:text-5xl text-red-600 mb-3 sm:mb-4">
+                    <i className="fas fa-user-shield"></i>
+                  </div>
+                  <span className="text-[2rem] sm:text-[2.5rem] font-extrabold text-red-600 block mb-2">
+                    {loading ? <span className="animate-pulse opacity-20">...</span> : stats.totalAgents}
+                  </span>
+                  <div className="text-sm sm:text-base text-gray-500 font-medium">
+                    Agents
+                  </div>
+                </Link>
+              </>
+            )}
+
             <Link
-              to={"/allusers"}
-              className="stat-card-before bg-white/90 backdrop-blur-[15px] border border-red-600/20 rounded-[20px] p-6 sm:p-8 text-center transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:scale-[1.02] hover:shadow-[0_15px_35px_rgba(220,38,38,0.15)]"
-            >
-              <div className="text-4xl sm:text-5xl text-red-600 mb-3 sm:mb-4">
-                <i className="fas fa-users"></i>
-              </div>
-              <span className="text-[2rem] sm:text-[2.5rem] font-extrabold text-red-600 block mb-2">
-                {loading ? <span className="animate-pulse opacity-20">...</span> : stats.totalAdmins}
-              </span>
-              <div className="text-sm sm:text-base text-gray-500 font-medium">
-                Total Employees
-              </div>
-            </Link>
-            <Link
-              to={"/allagents"}
-              className="stat-card-before bg-white/90 backdrop-blur-[15px] border border-red-600/20 rounded-[20px] p-6 sm:p-8 text-center transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:scale-[1.02] hover:shadow-[0_15px_35px_rgba(37,99,235,0.15)]"
-            >
-              <div className="text-4xl sm:text-5xl text-red-600 mb-3 sm:mb-4">
-                <i className="fas fa-user-shield"></i>
-              </div>
-              <span className="text-[2rem] sm:text-[2.5rem] font-extrabold text-red-600 block mb-2">
-                {loading ? <span className="animate-pulse opacity-20">...</span> : stats.totalAgents}
-              </span>
-              <div className="text-sm sm:text-base text-gray-500 font-medium">
-                Agents
-              </div>
-            </Link>
-            <Link
-              to={"/enquries"}
+              to={isAgent ? "/enquries" : "/enquries"}
               className="stat-card-before bg-white/90 backdrop-blur-[15px] border border-red-600/20 rounded-[20px] p-6 sm:p-8 text-center transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:scale-[1.02] hover:shadow-[0_15px_35px_rgba(37,99,235,0.15)]"
             >
               <div className="text-4xl sm:text-5xl text-red-600 mb-3 sm:mb-4">
@@ -289,11 +297,12 @@ export default function AdminDashboard() {
                 {loading ? <span className="animate-pulse opacity-20">...</span> : stats.totalEnquiries}
               </span>
               <div className="text-sm sm:text-base text-gray-500 font-medium">
-                Total Inquiries
+                {isAgent ? "Client Inquiries" : "Total Inquiries"}
               </div>
             </Link>
+
             <Link
-              to={"/itineraries"}
+              to={isAgent ? "/manage-agent-content" : "/itineraries"}
               className="stat-card-before bg-white/90 backdrop-blur-[15px] border border-red-600/20 rounded-[20px] p-6 sm:p-8 text-center transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:scale-[1.02] hover:shadow-[0_15px_35px_rgba(37,99,235,0.15)]"
             >
               <div className="text-4xl sm:text-5xl text-red-600 mb-3 sm:mb-4">
@@ -303,7 +312,7 @@ export default function AdminDashboard() {
                 {loading ? <span className="animate-pulse opacity-20">...</span> : stats.totalItineraries}
               </span>
               <div className="text-sm sm:text-base text-gray-500 font-medium">
-                Total Itineraries
+                {isAgent ? "My Packages" : "Total Itineraries"}
               </div>
             </Link>
           </div>

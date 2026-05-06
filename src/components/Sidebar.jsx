@@ -587,6 +587,27 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
             </Link>
           </div>
 
+          {/* Agent Leads (New Section) */}
+          <div className="mx-4 my-1">
+            <Link
+              to="/agent-leads"
+              className={`
+                nav-link-before
+                flex items-center gap-4 px-6 py-4
+                text-gray-800 no-underline rounded-xl
+                transition-all duration-300
+                ${isActive("/agent-leads")
+                  ? "text-red-600 bg-red-600/10 font-bold shadow-[0_4px_15px_rgba(220,38,38,0.1)]"
+                  : "hover:bg-red-600/10 hover:text-red-600 hover:translate-x-1"
+                }
+              `}
+              onClick={() => setSidebarOpen(false)}
+            >
+              <i className="fas fa-user-tie text-base w-5 text-center"></i>
+              <span className="text-[13px] sm:text-sm font-semibold">Agent Leads</span>
+            </Link>
+          </div>
+
           {/* Global Review Management (SuperAdmin Only) */}
           {JSON.parse(localStorage.getItem("user"))?.role === "SUPERADMIN" && (
             <div className="mx-4 my-1">

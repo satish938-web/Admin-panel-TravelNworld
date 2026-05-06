@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { HiLocationMarker, HiTrash, HiSearch, HiStar, HiPlus, HiX, HiVideoCamera, HiPhotograph, HiCheckCircle, HiChartBar } from 'react-icons/hi';
+import { HiLocationMarker, HiTrash, HiSearch, HiStar, HiPlus, HiX, HiVideoCamera, HiPhotograph, HiCheckCircle, HiChartBar, HiPencil } from 'react-icons/hi';
 import ProfileButton from '../components/ProfileButton';
 import MediaUploader from '../components/MediaUploader';
 import axios from 'axios';
@@ -276,13 +276,13 @@ const TestimonialList = () => {
                   </div>
 
                   <div className="pt-6 flex gap-3">
-                    {/* <button
+                    <button
                       onClick={() => handleEdit(t)}
                       className="flex-1 bg-slate-50 hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all border border-slate-100 hover:border-emerald-100"
                     >
-                      <i className="fas fa-edit text-xl" />
+                      <HiPencil className="text-xl" />
                       <span>Edit</span>
-                    </button> */}
+                    </button>
                     <button
                       onClick={() => handleDelete(t._id)}
                       className="flex-1 bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-600 font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 transition-all border border-slate-100 hover:border-red-100"

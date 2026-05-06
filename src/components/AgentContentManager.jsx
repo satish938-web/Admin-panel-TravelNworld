@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Swal from "sweetalert2";
-import { 
+import {
   HiOutlineTrash, HiOutlinePencilSquare, HiOutlineInformationCircle, HiXMark,
   HiChevronLeft, HiChevronRight
 } from "react-icons/hi2";
-import { 
-  HiSave, HiStar, HiTrash, HiPencil, HiExternalLink, 
+import {
+  HiSave, HiStar, HiTrash, HiPencil, HiExternalLink,
   HiUserGroup, HiTrendingUp, HiFilter, HiSearch, HiOutlineChatAlt2
 } from "react-icons/hi";
 import { toast } from "../utils/toast";
-import { 
-  FaSuitcase, FaClock, FaMapMarkerAlt, FaUser, FaImage, 
-  FaInfoCircle, FaListAlt, FaTags, FaImages, FaVideo, 
-  FaBlog, FaQuoteLeft, FaChevronLeft, FaChevronRight, FaStar 
+import {
+  FaSuitcase, FaClock, FaMapMarkerAlt, FaUser, FaImage,
+  FaInfoCircle, FaListAlt, FaTags, FaImages, FaVideo,
+  FaBlog, FaQuoteLeft, FaChevronLeft, FaChevronRight, FaStar
 } from "react-icons/fa";
 import ProfileButton from "./ProfileButton";
 import MediaUploader from "./MediaUploader";
@@ -22,70 +22,515 @@ import { getImageUrl, API_BASE, PUBLIC_FRONTEND_URL } from "../utils/api";
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 
-const QUILL_STYLE = `
-  .ql-container {
-    font-family: 'Inter', sans-serif !important;
-    font-size: 14px !important;
+/* ─── Design tokens ───────────────────────────────────────────── */
+const DESIGN_TOKENS = `
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap');
+
+  :root {
+    --ink: #111111;
+    --ink-2: #333333;
+    --ink-3: #666666;
+    --ink-4: #999999;
+    --rule: #E8E8E8;
+    --surface: #F7F7F7;
+    --white: #FFFFFF;
+    --accent: #C0100A;
+    --accent-2: #960C07;
+    --accent-muted: #FEF1F1;
+    --green: #1A7A3A;
+    --green-muted: #EDFAF3;
+    --amber: #B45309;
+    --amber-muted: #FEF3C7;
+    --red: #C0100A;
+    --red-muted: #FEF1F1;
+    --sidebar-bg: #F2F2F2;
+    --sidebar-border: rgba(0,0,0,0.06);
+    --sidebar-text: #888888;
+    --sidebar-active: #111111;
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.04);
+    --shadow-elevated: 0 4px 6px rgba(0,0,0,0.06), 0 10px 30px rgba(0,0,0,0.10);
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 20px;
   }
-  .ql-editor {
-    min-height: 200px;
-    line-height: 1.6;
-    color: #334155;
+
+  * { box-sizing: border-box; }
+
+  .acm-root {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    color: var(--ink);
+    background: #EFEFEF;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
   }
-  .ql-toolbar.ql-snow {
-    border-top-left-radius: 1.5rem;
-    border-top-right-radius: 1.5rem;
-    background: #fff;
-    border: 1px solid #f1f5f9 !important;
-    padding: 0.75rem !important;
+
+  .acm-root h1, .acm-root h2, .acm-root h3 {
+    font-family: 'Instrument Serif', Georgia, serif;
+    letter-spacing: -0.02em;
   }
-  .ql-container.ql-snow {
-    border: 1px solid #f1f5f9 !important;
-    border-top: none !important;
-    border-bottom-left-radius: 1.5rem;
-    border-bottom-right-radius: 1.5rem;
-    background: transparent;
+
+  /* Nav */
+  .acm-nav {
+    position: sticky; top: 0; z-index: 60;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--rule);
+    height: 64px;
+    display: flex; align-items: center;
+  }
+  .acm-nav-inner {
+    max-width: 1600px; width: 100%; margin: 0 auto;
+    padding: 0 32px;
+    display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  }
+  .acm-nav-brand { display: flex; align-items: center; gap: 12px; }
+  .acm-nav-logo {
+    width: 34px; height: 34px;
+    background: linear-gradient(135deg, #111111 0%, #C0100A 100%);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0;
+  }
+  .acm-nav-title { font-size: 15px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; }
+  .acm-nav-sub { font-size: 11px; color: var(--ink-4); font-weight: 400; }
+
+  .acm-select-wrap {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: var(--radius-md); padding: 0 14px; height: 38px;
+    min-width: 280px; transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .acm-select-wrap:focus-within {
+    border-color: var(--accent); box-shadow: 0 0 0 3px rgba(192,16,10,0.1);
+  }
+  .acm-select-wrap select {
+    background: transparent; border: none; outline: none;
+    font-size: 13px; font-weight: 500; color: var(--ink); width: 100%;
+    font-family: 'DM Sans', sans-serif; cursor: pointer;
+  }
+  .acm-select-wrap svg { color: var(--ink-4); flex-shrink: 0; }
+
+  .acm-save-btn {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--ink); color: white;
+    border: none; border-radius: var(--radius-md); padding: 0 18px; height: 38px;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.01em;
+    cursor: pointer; transition: background 0.15s, transform 0.1s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .acm-save-btn:hover { background: var(--accent); }
+  .acm-save-btn:active { transform: scale(0.98); }
+  .acm-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Layout */
+  .acm-layout {
+    max-width: 1600px; margin: 0 auto; padding: 32px;
+    display: grid; grid-template-columns: 270px 1fr; gap: 28px;
+  }
+
+  /* Sidebar */
+  .acm-sidebar {
+    position: sticky; top: 80px; align-self: start;
+    background: #FFFFFF !important;
+    border: 1px solid #E8E8E8;
+    border-radius: var(--radius-xl);
+    overflow: hidden; height: calc(100vh - 96px);
+    display: flex; flex-direction: column;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .acm-sidebar-header {
+    padding: 20px 18px 16px;
+    border-bottom: 1px solid #EBEBEB;
+    background: #FAFAFA;
+  }
+  .acm-sidebar-header-label {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+    color: #AAAAAA;
+  }
+  .acm-sidebar-nav { padding: 10px 8px; overflow-y: auto; flex: 1; }
+  .acm-sidebar-nav::-webkit-scrollbar { width: 0; }
+  .acm-nav-item {
+    width: 100%; display: flex; align-items: center; gap: 13px;
+    padding: 11px 14px; border-radius: var(--radius-md); margin-bottom: 3px;
+    border: none; background: transparent; cursor: pointer;
+    color: var(--sidebar-text); text-align: left;
+    transition: background 0.15s, color 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .acm-nav-item:hover { background: rgba(0,0,0,0.05); color: #111111; }
+  .acm-nav-item.active { background: rgba(192,16,10,0.10); color: var(--sidebar-active); }
+  .acm-nav-item-icon {
+    width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 15px; transition: background 0.15s; background: rgba(0,0,0,0.07); color: #888888;
+  }
+  .acm-nav-item.active .acm-nav-item-icon { background: var(--accent); color: white; }
+  .acm-nav-item-label { font-size: 15px; font-weight: 500; }
+  .acm-nav-item-dot {
+    margin-left: auto; width: 5px; height: 5px; border-radius: 50%;
+    background: var(--accent); opacity: 0;
+  }
+  .acm-nav-item.active .acm-nav-item-dot { opacity: 1; }
+
+  /* Main content */
+  .acm-main { min-width: 0; }
+  .acm-section-header {
+    display: flex; align-items: center; justify-between; gap: 16px;
+    margin-bottom: 24px;
+  }
+  .acm-section-title { font-size: 26px; color: var(--ink); line-height: 1.1; }
+  .acm-section-crumb { font-size: 12px; color: var(--ink-4); font-weight: 400; margin-top: 4px; }
+
+  /* Cards */
+  .acm-card {
+    background: var(--white); border: 1px solid var(--rule);
+    border-radius: var(--radius-xl); box-shadow: var(--shadow-card);
+  }
+  .acm-card-body { padding: 28px; }
+  .acm-card-header {
+    display: flex; align-items: center; gap: 14px;
+    padding: 20px 28px; border-bottom: 1px solid var(--rule);
+  }
+  .acm-card-icon {
+    width: 38px; height: 38px; border-radius: var(--radius-md);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .acm-card-title { font-size: 15px; font-weight: 600; color: var(--ink); }
+  .acm-card-subtitle { font-size: 11px; color: var(--ink-4); margin-top: 2px; }
+
+  /* Form elements */
+  .acm-field { display: flex; flex-direction: column; gap: 6px; }
+  .acm-label {
+    font-size: 11px; font-weight: 600; color: var(--ink-3);
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .acm-input {
+    height: 40px; padding: 0 14px;
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: var(--radius-md); font-size: 13px; font-weight: 500; color: var(--ink);
+    outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+    font-family: 'DM Sans', sans-serif; width: 100%;
+  }
+  .acm-input:focus {
+    border-color: var(--accent); box-shadow: 0 0 0 3px rgba(192,16,10,0.1);
+    background: white;
+  }
+  .acm-input:disabled { opacity: 0.4; cursor: not-allowed; }
+  .acm-textarea {
+    padding: 12px 14px; resize: vertical;
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: var(--radius-md); font-size: 13px; font-weight: 400; color: var(--ink);
+    outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+    font-family: 'DM Sans', sans-serif; width: 100%; line-height: 1.5;
+  }
+  .acm-textarea:focus {
+    border-color: var(--accent); box-shadow: 0 0 0 3px rgba(192,16,10,0.1);
+    background: white;
+  }
+
+  /* Grid */
+  .acm-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .acm-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .acm-span-2 { grid-column: span 2; }
+
+  /* Tags */
+  .acm-tag-container {
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: var(--radius-md); padding: 10px; min-height: 80px;
+    display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .acm-tag-container:focus-within {
+    border-color: var(--accent); box-shadow: 0 0 0 3px rgba(192,16,10,0.1); background: white;
+  }
+  .acm-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; background: white; border: 1px solid var(--rule);
+    border-radius: 100px; font-size: 12px; font-weight: 500; color: var(--ink);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .acm-tag button { display: flex; align-items: center; color: var(--ink-4); background: none; border: none; cursor: pointer; padding: 0; transition: color 0.1s; }
+  .acm-tag button:hover { color: var(--red); }
+  .acm-tag-input {
+    background: transparent; border: none; outline: none;
+    font-size: 13px; font-weight: 400; color: var(--ink); min-width: 120px;
+    font-family: 'DM Sans', sans-serif; padding: 4px 2px;
+  }
+
+  /* Buttons */
+  .acm-btn-primary {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--ink); color: white; border: none;
+    border-radius: var(--radius-md); padding: 0 16px; height: 36px;
+    font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .acm-btn-primary:hover { background: var(--accent); }
+  .acm-btn-secondary {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: transparent; color: var(--ink-2); border: 1px solid var(--rule);
+    border-radius: var(--radius-md); padding: 0 16px; height: 36px;
+    font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .acm-btn-secondary:hover { border-color: var(--ink-3); color: var(--ink); background: var(--surface); }
+  .acm-btn-ghost {
+    background: none; border: none; color: var(--ink-4); cursor: pointer;
+    padding: 6px; border-radius: var(--radius-sm); transition: color 0.15s, background 0.15s;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .acm-btn-ghost:hover { color: var(--ink); background: var(--surface); }
+  .acm-btn-danger-ghost {
+    background: none; border: none; color: var(--ink-4); cursor: pointer;
+    padding: 6px; border-radius: var(--radius-sm); transition: color 0.15s, background 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .acm-btn-danger-ghost:hover { color: var(--red); background: var(--red-muted); }
+  .acm-btn-add-dashed {
+    width: 100%; padding: 18px; border: 1.5px dashed var(--rule);
+    border-radius: var(--radius-lg); background: none; cursor: pointer;
+    font-size: 12px; font-weight: 600; color: var(--ink-4);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .acm-btn-add-dashed:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-muted); }
+
+  /* Badges */
+  .acm-badge {
+    display: inline-flex; align-items: center; padding: 3px 10px;
+    border-radius: 100px; font-size: 11px; font-weight: 600; letter-spacing: 0.02em;
+  }
+  .acm-badge-green { background: var(--green-muted); color: var(--green); }
+  .acm-badge-blue { background: var(--accent-muted); color: var(--accent); }
+  .acm-badge-amber { background: var(--amber-muted); color: var(--amber); }
+  .acm-badge-gray { background: var(--surface); color: var(--ink-3); border: 1px solid var(--rule); }
+
+  /* Table-style stats */
+  .acm-stat-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0; border-bottom: 1px solid var(--rule);
+  }
+  .acm-stat-row:last-child { border-bottom: none; }
+  .acm-stat-label { font-size: 12px; font-weight: 500; color: var(--ink-3); }
+  .acm-stat-value { font-size: 18px; font-weight: 600; color: var(--ink); font-family: 'Instrument Serif', serif; }
+
+  /* Empty states */
+  .acm-empty {
+    padding: 64px 32px; text-align: center;
+    border: 1.5px dashed var(--rule); border-radius: var(--radius-xl);
+  }
+  .acm-empty-icon {
+    width: 52px; height: 52px; background: var(--surface); border-radius: var(--radius-lg);
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: var(--ink-4);
+  }
+  .acm-empty-title { font-size: 15px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
+  .acm-empty-text { font-size: 13px; color: var(--ink-4); }
+
+  /* Package cards */
+  .acm-pkg-card {
+    background: white; border: 1px solid var(--rule); border-radius: var(--radius-xl);
+    overflow: hidden; box-shadow: var(--shadow-card); transition: box-shadow 0.2s, transform 0.2s;
+    display: flex; flex-direction: column;
+  }
+  .acm-pkg-card:hover { box-shadow: var(--shadow-elevated); transform: translateY(-2px); }
+  .acm-pkg-img { position: relative; height: 180px; overflow: hidden; }
+  .acm-pkg-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s; }
+  .acm-pkg-card:hover .acm-pkg-img img { transform: scale(1.04); }
+  .acm-pkg-img-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(12,17,23,0.75) 0%, transparent 60%);
+  }
+  .acm-pkg-img-badges { position: absolute; top: 12px; left: 12px; display: flex; gap: 6px; }
+  .acm-pkg-img-title { position: absolute; bottom: 12px; left: 14px; right: 14px; }
+  .acm-pkg-img-dest { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.7); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; display: flex; align-items: center; gap: 5px; }
+  .acm-pkg-img-name { font-size: 15px; font-weight: 600; color: white; line-height: 1.3; font-family: 'Instrument Serif', serif; }
+  .acm-pkg-body { padding: 16px 16px 14px; flex: 1; display: flex; flex-direction: column; gap: 12px; }
+  .acm-pkg-meta { display: flex; gap: 16px; }
+  .acm-pkg-meta-item { display: flex; flex-direction: column; gap: 2px; }
+  .acm-pkg-meta-key { font-size: 10px; font-weight: 600; color: var(--ink-4); text-transform: uppercase; letter-spacing: 0.06em; }
+  .acm-pkg-meta-val { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .acm-pkg-actions { display: flex; gap: 8px; margin-top: auto; }
+
+  /* Review cards */
+  .acm-review-card {
+    background: white; border: 1px solid var(--rule); border-radius: var(--radius-xl);
+    padding: 20px; box-shadow: var(--shadow-card); transition: box-shadow 0.2s;
+    cursor: pointer;
+  }
+  .acm-review-card:hover { box-shadow: var(--shadow-elevated); }
+
+  /* Pagination */
+  .acm-pagination { display: flex; align-items: center; gap: 4px; }
+  .acm-page-btn {
+    width: 32px; height: 32px; border-radius: var(--radius-sm);
+    border: 1px solid var(--rule); background: white; color: var(--ink-3);
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    font-size: 12px; font-weight: 600; transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .acm-page-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .acm-page-btn.active { background: var(--ink); color: white; border-color: var(--ink); }
+  .acm-page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* Modal */
+  .acm-modal-backdrop {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(12,17,23,0.7); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  .acm-modal {
+    background: white; border-radius: var(--radius-xl);
+    width: 100%; max-width: 860px; max-height: 90vh;
+    display: flex; flex-direction: column;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.25); border: 1px solid var(--rule);
+    animation: acmModalIn 0.2s ease-out;
+  }
+  @keyframes acmModalIn {
+    from { opacity: 0; transform: translateY(12px) scale(0.98); }
+    to   { opacity: 1; transform: none; }
+  }
+  .acm-modal-header {
+    padding: 20px 24px; border-bottom: 1px solid var(--rule);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .acm-modal-title { font-size: 18px; color: var(--ink); font-family: 'Instrument Serif', serif; }
+  .acm-modal-subtitle { font-size: 12px; color: var(--ink-4); margin-top: 2px; }
+  .acm-modal-body { padding: 24px; overflow-y: auto; flex: 1; }
+  .acm-modal-footer {
+    padding: 16px 24px; border-top: 1px solid var(--rule);
+    display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+  }
+  .acm-modal-close {
+    width: 34px; height: 34px; background: var(--surface); border: 1px solid var(--rule);
+    border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--ink-3); transition: all 0.15s;
+  }
+  .acm-modal-close:hover { background: var(--ink); color: white; border-color: var(--ink); }
+
+  /* Divider */
+  .acm-divider { border: none; border-top: 1px solid var(--rule); margin: 0; }
+
+  /* Quill overrides */
+  .acm-quill .ql-toolbar.ql-snow {
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    border: 1px solid var(--rule) !important;
+    background: var(--surface); padding: 8px !important;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .acm-quill .ql-container.ql-snow {
+    border: 1px solid var(--rule) !important; border-top: none !important;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+  }
+  .acm-quill .ql-editor { min-height: 200px; line-height: 1.6; color: var(--ink); }
+  .acm-quill .ql-editor:focus { outline: none; }
+
+  /* Testimonial */
+  .acm-testimonial-card {
+    background: white; border: 1px solid var(--rule); border-radius: var(--radius-xl);
+    padding: 24px; box-shadow: var(--shadow-card); position: relative;
+  }
+  .acm-testimonial-remove {
+    position: absolute; top: 16px; right: 16px; opacity: 0; transition: opacity 0.15s;
+  }
+  .acm-testimonial-card:hover .acm-testimonial-remove { opacity: 1; }
+
+  /* Branch card */
+  .acm-branch-card {
+    background: white; border: 1px solid var(--rule); border-radius: var(--radius-xl);
+    padding: 24px; box-shadow: var(--shadow-card); position: relative;
+  }
+  .acm-branch-num {
+    font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase;
+    letter-spacing: 0.08em; margin-bottom: 16px;
+  }
+
+  /* Blog card */
+  .acm-blog-card {
+    background: white; border: 1px solid var(--rule); border-radius: var(--radius-xl);
+    overflow: hidden; box-shadow: var(--shadow-card);
+  }
+  .acm-blog-card-bar {
+    height: 3px; background: linear-gradient(90deg, var(--accent), #111111);
+  }
+  .acm-blog-card-body { padding: 24px; }
+
+  /* Day plan */
+  .acm-day-card {
+    background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius-lg);
+    padding: 14px 16px; position: relative;
+  }
+  .acm-day-badge {
+    width: 28px; height: 28px; background: var(--ink); color: white;
+    border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; flex-shrink: 0;
+  }
+
+  /* Star rating */
+  .acm-stars { display: flex; gap: 3px; }
+  .acm-star { color: var(--rule); font-size: 13px; }
+  .acm-star.filled { color: #F59E0B; }
+
+  /* Loading spinner */
+  .acm-spin {
+    width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Landing empty */
+  .acm-landing {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 480px; text-align: center;
+    background: white; border: 1px solid var(--rule); border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-card);
+  }
+  .acm-landing-icon {
+    width: 64px; height: 64px;
+    background: linear-gradient(135deg, #111111, #C0100A);
+    border-radius: var(--radius-xl);
+    display: flex; align-items: center; justify-content: center; margin-bottom: 20px; color: white;
+  }
+  .acm-landing h3 { font-size: 22px; color: var(--ink); margin-bottom: 8px; }
+  .acm-landing p { font-size: 13px; color: var(--ink-4); max-width: 280px; line-height: 1.6; }
+
+  @media (max-width: 1024px) {
+    .acm-layout { grid-template-columns: 1fr; padding: 20px; }
+    .acm-sidebar { position: static; height: auto; flex-direction: row; border-radius: var(--radius-lg); overflow-x: auto; }
+    .acm-sidebar-header { display: none; }
+    .acm-sidebar-nav { display: flex; padding: 8px; overflow-x: auto; overflow-y: hidden; }
+    .acm-nav-item { white-space: nowrap; flex-shrink: 0; }
+    .acm-grid-2, .acm-grid-3 { grid-template-columns: 1fr; }
+    .acm-span-2 { grid-column: auto; }
   }
 `;
 
+/* ─── Sub-components ──────────────────────────────────────────── */
 const Field = ({ label, id, name, type = "text", value, onChange, placeholder, disabled }) => (
-  <div className="flex flex-col w-full">
-    <label htmlFor={id} className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
-      {label}
-    </label>
+  <div className="acm-field">
+    <label htmlFor={id} className="acm-label">{label}</label>
     <input
-      type={type}
-      id={id}
-      name={name || id}
-      value={value}
-      onChange={onChange}
-      disabled={disabled}
-      placeholder={placeholder || `Enter ${label.toLowerCase()}`}
-      className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-300 disabled:opacity-50 disabled:cursor-not-allowed"
+      type={type} id={id} name={name || id} value={value || ""} onChange={onChange}
+      disabled={disabled} placeholder={placeholder || `Enter ${label.toLowerCase()}`}
+      className="acm-input"
     />
   </div>
 );
 
 const TextAreaField = ({ label, id, name, rows = 4, value, onChange, placeholder }) => (
-  <div className="flex flex-col w-full">
-    <label htmlFor={id} className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
-      {label}
-    </label>
+  <div className="acm-field">
+    <label htmlFor={id} className="acm-label">{label}</label>
     <textarea
-      id={id}
-      name={name || id}
-      value={value}
-      onChange={onChange}
-      rows={rows}
-      placeholder={placeholder}
-      className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-300 resize-none"
+      id={id} name={name || id} value={value || ""} onChange={onChange}
+      rows={rows} placeholder={placeholder} className="acm-textarea"
     />
   </div>
 );
 
 const TagInput = ({ label, value, onChange, placeholder }) => {
   const [inputValue, setInputValue] = useState("");
-  const tags = Array.isArray(value) ? value : (typeof value === "string" ? value.split(",").map(t => t.trim()).filter(t => t !== "") : []);
+  const tags = Array.isArray(value) ? value : (typeof value === "string" ? value.split(",").map(t => t.trim()).filter(Boolean) : []);
 
   const handleKeyDown = (e) => {
     if ((e.key === "Enter" || e.key === ",") && inputValue.trim()) {
@@ -99,79 +544,119 @@ const TagInput = ({ label, value, onChange, placeholder }) => {
   };
 
   return (
-    <div className="flex flex-col w-full">
-      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">{label}</label>
-      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex flex-wrap gap-2 min-h-[100px] focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:border-blue-500 transition-all">
+    <div className="acm-field">
+      <label className="acm-label">{label}</label>
+      <div className="acm-tag-container">
         {tags.map((tag, idx) => (
-          <span key={idx} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-blue-600 rounded-xl text-xs font-black border border-blue-100 shadow-sm">
+          <span key={idx} className="acm-tag">
             {tag}
-            <button type="button" onClick={() => onChange(tags.filter(t => t !== tag))} className="hover:text-red-500 transition-colors">
-              <HiXMark size={14} />
-            </button>
+            <button type="button" onClick={() => onChange(tags.filter(t => t !== tag))}><HiXMark size={11} /></button>
           </span>
         ))}
         <input
-          type="text"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={tags.length === 0 ? placeholder : "Add more..."}
-          className="flex-1 outline-none py-1.5 text-sm font-bold text-slate-700 bg-transparent min-w-[120px]"
+          type="text" value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)} onKeyDown={handleKeyDown}
+          placeholder={tags.length === 0 ? placeholder : "Add more…"} className="acm-tag-input"
         />
       </div>
     </div>
   );
 };
 
-const TestimonialEditor = ({ testimonials, onChange, agentName, agentId }) => {
+const Stars = ({ value }) => (
+  <div className="acm-stars">
+    {[1,2,3,4,5].map(i => (
+      <FaStar key={i} className={`acm-star ${i <= value ? "filled" : ""}`} />
+    ))}
+  </div>
+);
+
+const ControlledEditor = ({ value, onChange, placeholder, minHeight = "240px" }) => {
+  const [local, setLocal] = useState(value);
+  useEffect(() => { if (value !== local) setLocal(value); }, [value]);
+  const handleChange = (c) => { setLocal(c); onChange(c); };
+  return (
+    <div className="acm-quill">
+      <ReactQuill theme="snow" value={local || ""} onChange={handleChange} style={{ minHeight }} placeholder={placeholder} />
+    </div>
+  );
+};
+
+const Pagination = ({ current, total, onChange }) => {
+  if (total <= 1) return null;
+  return (
+    <div style={{ display: "flex", justifyContent: "center", paddingTop: 20 }}>
+      <div className="acm-pagination">
+        <button className="acm-page-btn" disabled={current === 1} onClick={() => onChange(current - 1)}>
+          <FaChevronLeft size={10} />
+        </button>
+        {[...Array(total)].map((_, i) => (
+          <button key={i} className={`acm-page-btn ${current === i + 1 ? "active" : ""}`} onClick={() => onChange(i + 1)}>{i + 1}</button>
+        ))}
+        <button className="acm-page-btn" disabled={current === total} onClick={() => onChange(current + 1)}>
+          <FaChevronRight size={10} />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const TestimonialEditor = ({ testimonials, onChange, agentName }) => {
   const handleAdd = () => onChange([...testimonials, { name: "", text: "", rating: 5, image: "", profile: "", date: "" }]);
   const handleRemove = (idx) => onChange(testimonials.filter((_, i) => i !== idx));
   const handleUpdate = (idx, field, value) => onChange(testimonials.map((t, i) => i === idx ? { ...t, [field]: value } : t));
 
   return (
-    <div className="space-y-8">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {testimonials.map((t, idx) => (
-        <div key={idx} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative group hover:shadow-2xl hover:shadow-blue-500/5 transition-all duration-500">
-          <button onClick={() => handleRemove(idx)} className="absolute top-6 right-6 w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-red-500 hover:text-white transition-all">
-            <HiTrash size={20} />
-          </button>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <Field label="Customer Name" value={t.name} onChange={(e) => handleUpdate(idx, "name", e.target.value)} />
-            <div className="flex flex-col">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Review Date</label>
-              <input type="date" value={t.date ? (t.date.includes('-') ? t.date : new Date(t.date).toISOString().split('T')[0]) : ''} onChange={(e) => handleUpdate(idx, "date", e.target.value)} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 outline-none" />
+        <div key={idx} className="acm-testimonial-card">
+          <div className="acm-testimonial-remove">
+            <button className="acm-btn-danger-ghost" onClick={() => handleRemove(idx)}><HiTrash size={16} /></button>
+          </div>
+          <div className="acm-grid-2" style={{ gap: 16 }}>
+            <Field label="Customer name" value={t.name} onChange={(e) => handleUpdate(idx, "name", e.target.value)} />
+            <div className="acm-field">
+              <label className="acm-label">Review date</label>
+              <input type="date" value={t.date ? (t.date.includes('-') ? t.date : new Date(t.date).toISOString().split('T')[0]) : ''}
+                onChange={(e) => handleUpdate(idx, "date", e.target.value)} className="acm-input" />
             </div>
-            <div className="lg:col-span-2">
-              <TextAreaField label="Review Narrative" value={t.text} onChange={(e) => handleUpdate(idx, "text", e.target.value)} rows={3} />
+            <div className="acm-span-2">
+              <TextAreaField label="Review" value={t.text} onChange={(e) => handleUpdate(idx, "text", e.target.value)} rows={3} />
             </div>
-            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
-              <MediaUploader label="Trip Photo" existingUrls={t.image ? [t.image] : []} onChange={(urls) => handleUpdate(idx, "image", urls[0] || "")} folder={getS3Path.agentTestimonials(agentName)} />
-              <MediaUploader label="Customer Profile" existingUrls={t.profile ? [t.profile] : []} onChange={(urls) => handleUpdate(idx, "profile", urls[0] || "")} folder={getS3Path.agentTestimonials(agentName)} />
-            </div>
+            <MediaUploader label="Trip photo" existingUrls={t.image ? [t.image] : []} onChange={(urls) => handleUpdate(idx, "image", urls[0] || "")} folder={getS3Path.agentTestimonials(agentName)} />
+            <MediaUploader label="Customer photo" existingUrls={t.profile ? [t.profile] : []} onChange={(urls) => handleUpdate(idx, "profile", urls[0] || "")} folder={getS3Path.agentTestimonials(agentName)} />
           </div>
         </div>
       ))}
-      <button onClick={handleAdd} className="w-full py-8 border-2 border-dashed border-slate-200 rounded-[2.5rem] text-slate-400 font-black uppercase tracking-[0.2em] text-xs hover:border-blue-500 hover:text-blue-600 transition-all hover:bg-blue-50/30">
-        + Add Curated Testimonial
-      </button>
+      <button className="acm-btn-add-dashed" onClick={handleAdd}>+ Add testimonial</button>
     </div>
   );
 };
 
+/* ─── Section definitions ─────────────────────────────────────── */
 const SECTIONS = [
-  { id: "agencyInfo", label: "Brand Profile", icon: <FaUser />, color: "from-blue-500 to-indigo-600" },
-  { id: "tourPackages", label: "Inventory", icon: <FaSuitcase />, color: "from-emerald-500 to-teal-600" },
-  { id: "reviewsList", label: "Public Feedback", icon: <FaStar />, color: "from-orange-500 to-red-600" },
-  { id: "testimonials", label: "Curated Reviews", icon: <FaQuoteLeft />, color: "from-purple-500 to-fuchsia-600" },
-  { id: "blogs", label: "Media & Blogs", icon: <FaBlog />, color: "from-pink-500 to-rose-600" },
-  { id: "agentPhotos", label: "Agency Gallery", icon: <FaImages />, color: "from-cyan-500 to-blue-600" },
-  { id: "branchAddresses", label: "Locations", icon: <FaMapMarkerAlt />, color: "from-slate-500 to-slate-700" },
+  { id: "photo",          label: "Profile Photo",icon: <FaUser size={13} />,          accent: "#C0100A" },
+  { id: "bannerImage",    label: "Banner",       icon: <FaImage size={13} />,         accent: "#1C5FE5" },
+  { id: "branchAddresses",label: "Branches",     icon: <FaMapMarkerAlt size={13} />,  accent: "#0E7A50" },
+  { id: "overview",       label: "Overview",     icon: <FaInfoCircle size={13} />,    accent: "#6366F1" },
+  { id: "quickInfo",      label: "Quick Info",   icon: <FaListAlt size={13} />,       accent: "#0891B2" },
+  { id: "services",       label: "Services",     icon: <FaSuitcase size={13} />,      accent: "#059669" },
+  { id: "tourPackages",   label: "Packages",     icon: <FaSuitcase size={13} />,      accent: "#1C5FE5" },
+  { id: "agentPhotos",    label: "Gallery",      icon: <FaImages size={13} />,        accent: "#DB2777" },
+  { id: "agentVideos",    label: "Videos",       icon: <FaVideo size={13} />,         accent: "#DC2626" },
+  { id: "reviewsList",    label: "Reviews",      icon: <FaStar size={13} />,          accent: "#D97706" },
+  { id: "blogs",          label: "Blog",         icon: <FaBlog size={13} />,          accent: "#7C3AED" },
+  { id: "testimonials",   label: "Testimonials", icon: <HiOutlineChatAlt2 size={14} />, accent: "#BE185D" },
+  { id: "teamProfile",    label: "Team",         icon: <HiUserGroup size={14} />,     accent: "#1C5FE5" },
 ];
 
+const ITEMS_PER_PAGE = 6;
+
+/* ─── Main component ──────────────────────────────────────────── */
 const AgentContentManager = () => {
   const [agents, setAgents] = useState([]);
   const [selectedAgentId, setSelectedAgentId] = useState("");
-  const [selectedSection, setSelectedSection] = useState("agencyInfo");
+  const [selectedSection, setSelectedSection] = useState("photo");
   const [agentData, setAgentData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -186,10 +671,26 @@ const AgentContentManager = () => {
   const [mediaBusy, setMediaBusy] = useState(false);
   const [itineraryPage, setItineraryPage] = useState(1);
   const [reviewPage, setReviewPage] = useState(1);
-  const ITEMS_PER_PAGE = 6;
+  const [itineraryUpdating, setItineraryUpdating] = useState(false);
+
+  const agentName = agentData ? (agentData.company || `${agentData.firstName} ${agentData.lastName}`) : "unknown";
+
+  /* Handlers */
+  const handleBranchChange = (idx, e) => {
+    const { name, value } = e.target;
+    const next = [...agentData.branchAddresses];
+    next[idx] = { ...next[idx], [name]: value };
+    setAgentData({ ...agentData, branchAddresses: next });
+  };
+  const addBranch = () => setAgentData({ ...agentData, branchAddresses: [...(agentData.branchAddresses || []), { houseNo: "", street: "", area: "", city: "", postalCode: "", country: "" }] });
+  const removeBranch = (idx) => setAgentData({ ...agentData, branchAddresses: agentData.branchAddresses.filter((_, i) => i !== idx) });
 
   useEffect(() => { fetchAgents(); }, []);
-  const agentName = agentData ? (agentData.company || `${agentData.firstName} ${agentData.lastName}`) : "unknown";
+  useEffect(() => { if (selectedAgentId) fetchAgentDetails(selectedAgentId); else setAgentData(null); }, [selectedAgentId]);
+  useEffect(() => {
+    if (selectedAgentId && selectedSection === "tourPackages") { fetchItineraries(selectedAgentId); setItineraryPage(1); }
+    if (selectedAgentId && selectedSection === "reviewsList") { fetchPublicReviews(selectedAgentId); setReviewPage(1); }
+  }, [selectedAgentId, selectedSection]);
 
   const fetchAgents = async () => {
     try {
@@ -198,11 +699,6 @@ const AgentContentManager = () => {
       setAgents(res.data.data || []);
     } catch (err) { console.error(err); }
   };
-
-  useEffect(() => {
-    if (selectedAgentId) fetchAgentDetails(selectedAgentId);
-    else setAgentData(null);
-  }, [selectedAgentId]);
 
   const fetchAgentDetails = async (id) => {
     setLoading(true);
@@ -227,431 +723,568 @@ const AgentContentManager = () => {
     try {
       const token = localStorage.getItem("token");
       const res = await axios.get(`${API_BASE}/api/agents/all/reviews`, { headers: { Authorization: `Bearer ${token}` } });
-      const idToFilter = agentId?._id || agentId;
-      setPublicReviews((res.data.data || []).filter(r => r.agentId === idToFilter || r.agentId?._id === idToFilter));
+      const id = agentId?._id || agentId;
+      setPublicReviews((res.data.data || []).filter(r => r.agentId === id || r.agentId?._id === id));
     } catch (err) { console.error(err); } finally { setPublicReviewsLoading(false); }
   };
 
-  useEffect(() => {
-    if (selectedAgentId && selectedSection === "tourPackages") {
-      fetchItineraries(selectedAgentId);
-      setItineraryPage(1);
+  const deleteReview = async (reviewId) => {
+    const result = await Swal.fire({ title: "Delete review?", text: "This action cannot be undone.", icon: "warning", showCancelButton: true, confirmButtonColor: "#C0392B", confirmButtonText: "Delete" });
+    if (result.isConfirmed) {
+      try {
+        const token = localStorage.getItem("token");
+        await axios.delete(`${API_BASE}/api/agents/reviews/${reviewId}`, { headers: { Authorization: `Bearer ${token}` } });
+        toast.success("Review deleted"); fetchPublicReviews(selectedAgentId);
+      } catch { toast.error("Failed to delete review"); }
     }
-    if (selectedAgentId && selectedSection === "reviewsList") {
-      fetchPublicReviews(selectedAgentId);
-      setReviewPage(1);
-    }
-  }, [selectedAgentId, selectedSection]);
+  };
+
+  const updateReview = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (editingReview._id) {
+        await axios.put(`${API_BASE}/api/agents/reviews/${editingReview._id}`, editingReview, { headers: { Authorization: `Bearer ${token}` } });
+        toast.success("Review updated");
+      } else {
+        await axios.post(`${API_BASE}/api/agents/${selectedAgentId}/reviews`, editingReview, { headers: { Authorization: `Bearer ${token}` } });
+        toast.success("Review created");
+      }
+      setShowReviewEditModal(false); fetchPublicReviews(selectedAgentId);
+    } catch { toast.error("Failed to save review"); }
+  };
 
   const handleSave = async () => {
     if (!selectedAgentId || !agentData) return;
     setSaving(true);
     try {
       const token = localStorage.getItem("token");
-      const sectionKey = selectedSection === "agencyInfo" ? "overview" : selectedSection;
-      let payload = { [sectionKey]: agentData[sectionKey] };
-      if (selectedSection === "agencyInfo") {
-        payload = { 
-          company: agentData.company, 
-          description: agentData.description, 
-          phone: agentData.phone, 
-          email: agentData.email,
-          photo: agentData.photo,
-          bannerImage: agentData.bannerImage,
-          overview: agentData.overview
-        };
-      }
+      let payload = {};
+      if (selectedSection === "quickInfo") payload = { company: agentData.company, description: agentData.description, phone: agentData.phone, email: agentData.email, photo: agentData.photo, tags: agentData.tags, quickInfo: agentData.quickInfo };
+      else if (selectedSection === "photo") payload = { photo: agentData.photo };
+      else if (selectedSection === "blogs") { const cleaned = (agentData.blogs || []).map(b => { const c = {...b}; if (c._id?.startsWith?.("temp-")) delete c._id; return c; }); payload = { blogs: cleaned }; }
+      else if (selectedSection === "bannerImage") payload = { bannerImage: agentData.bannerImage };
+      else if (selectedSection === "overview") payload = { overview: agentData.overview };
+      else if (selectedSection === "services") payload = { services: agentData.services };
+      else if (selectedSection === "agentVideos") payload = { agentVideos: agentData.agentVideos };
+      else if (selectedSection === "teamProfile") payload = { firstName: agentData.firstName, lastName: agentData.lastName, whatsapp: agentData.whatsapp, website: agentData.website };
+      else payload = { [selectedSection]: agentData[selectedSection] };
+
       await axios.put(`${API_BASE}/api/agents/${selectedAgentId}`, payload, { headers: { Authorization: `Bearer ${token}` } });
-      toast.success("Profile section updated successfully!");
-      fetchAgentDetails(selectedAgentId);
-    } catch (err) { toast.error("Error saving section"); } finally { setSaving(false); }
+      toast.success("Changes saved"); fetchAgentDetails(selectedAgentId);
+    } catch { toast.error("Failed to save changes"); } finally { setSaving(false); }
   };
 
-  const renderSectionEditor = () => {
+  /* ─── Section renderers ────────────────────────────────────── */
+  const renderSection = () => {
     if (!agentData) return null;
 
     switch (selectedSection) {
-      case "agencyInfo":
+      case "bannerImage":
         return (
-          <div className="space-y-10 animate-fadeIn">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-1 space-y-8">
-                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col items-center">
-                  <MediaUploader label="Official Agency Logo" maxFiles={1} existingUrls={[agentData.photo].filter(Boolean)} onChange={(urls) => setAgentData({...agentData, photo: urls[0]})} folder={getS3Path.agentProfile(agentName)} />
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-4 text-center leading-relaxed">Identity for public listing</p>
-                </div>
-                <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden group shadow-2xl">
-                  <div className="absolute -top-10 -right-10 w-40 h-40 bg-blue-600/20 blur-3xl group-hover:bg-blue-600/40 transition-all duration-700"></div>
-                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 mb-6 relative z-10">Inventory Health</h4>
-                  <div className="space-y-6 relative z-10">
-                    <div className="flex justify-between items-end"><span className="text-slate-400 text-xs font-bold uppercase tracking-widest">Active Packages</span><span className="text-3xl font-black text-white">{itineraries.length}</span></div>
-                    <div className="flex justify-between items-end"><span className="text-slate-400 text-xs font-bold uppercase tracking-widest">Public Reviews</span><span className="text-3xl font-black text-white">{publicReviews.length}</span></div>
-                  </div>
-                </div>
-              </div>
-              <div className="lg:col-span-2 space-y-8">
-                <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm space-y-6">
-                  <div className="flex items-center gap-4 mb-4"><div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600"><FaInfoCircle size={24} /></div><div><h3 className="text-xl font-black text-slate-900 tracking-tight">Core Credentials</h3><p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Global Agency Identity</p></div></div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <Field label="Agency Name" value={agentData.company} onChange={(e) => setAgentData({...agentData, company: e.target.value})} />
-                    <Field label="Headline" placeholder="Expert in Luxury Tours" value={agentData.description} onChange={(e) => setAgentData({...agentData, description: e.target.value})} />
-                    <Field label="Primary Contact" value={agentData.phone} onChange={(e) => setAgentData({...agentData, phone: e.target.value})} />
-                    <Field label="Support Email" value={agentData.email} onChange={(e) => setAgentData({...agentData, email: e.target.value})} />
-                  </div>
-                </div>
-              </div>
+          <div className="acm-card">
+            <div className="acm-card-header">
+              <div className="acm-card-icon" style={{ background: "var(--accent-muted)", color: "var(--accent)" }}><FaImage size={16} /></div>
+              <div><div className="acm-card-title">Banner images</div><div className="acm-card-subtitle">Hero images displayed on the public profile</div></div>
             </div>
-            <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm space-y-6">
-              <div className="flex items-center gap-4 mb-4"><div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600"><FaListAlt size={24} /></div><div><h3 className="text-xl font-black text-slate-900 tracking-tight">Professional Narrative</h3><p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Formatted Overview & History</p></div></div>
-              <div className="prose-slate max-w-none"><ReactQuill theme="snow" value={agentData.overview || ""} onChange={(val) => setAgentData({...agentData, overview: val})} className="bg-slate-50 rounded-[2rem] overflow-hidden border-none" style={{ minHeight: '300px' }} /></div>
+            <div className="acm-card-body">
+              <MediaUploader label="Upload banners" existingUrls={agentData.bannerImage} onChange={(urls) => setAgentData({ ...agentData, bannerImage: urls })} folder={getS3Path.agentBanner(agentName)} />
             </div>
-            <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm"><MediaUploader label="Public Brand Banners & Gallery" existingUrls={agentData.bannerImage} onChange={(urls) => setAgentData({...agentData, bannerImage: urls})} folder={getS3Path.agentProfile(agentName)} /></div>
           </div>
         );
+
+      case "photo":
+        return (
+          <div className="acm-card">
+            <div className="acm-card-header">
+              <div className="acm-card-icon" style={{ background: "var(--accent-muted)", color: "var(--accent)" }}><FaUser size={16} /></div>
+              <div><div className="acm-card-title">Profile image</div><div className="acm-card-subtitle">Logo or agent photo displayed on the public profile</div></div>
+            </div>
+            <div className="acm-card-body">
+              <MediaUploader label="Upload photo" existingUrls={agentData.photo ? [agentData.photo] : []} onChange={(urls) => setAgentData({ ...agentData, photo: urls[0] || "" })} folder={getS3Path.agentBanner(agentName)} maxFiles={1} />
+            </div>
+          </div>
+        );
+
+      case "overview":
+        return (
+          <div className="acm-card">
+            <div className="acm-card-header">
+              <div className="acm-card-icon" style={{ background: "var(--accent-muted)", color: "var(--accent)" }}><FaInfoCircle size={16} /></div>
+              <div><div className="acm-card-title">Agency overview</div><div className="acm-card-subtitle">Formatted narrative displayed on the public profile</div></div>
+            </div>
+            <div className="acm-card-body">
+              <ControlledEditor value={agentData.overview || ""} onChange={(v) => setAgentData({ ...agentData, overview: v })} placeholder="Describe your agency's story, expertise, and mission…" />
+            </div>
+          </div>
+        );
+
+      case "quickInfo":
+        return (
+          <div className="acm-card">
+            <div className="acm-card-header">
+              <div className="acm-card-icon" style={{ background: "var(--accent-muted)", color: "var(--accent)" }}><FaListAlt size={16} /></div>
+              <div><div className="acm-card-title">Quick info</div><div className="acm-card-subtitle">Key facts and logistical details</div></div>
+            </div>
+            <div className="acm-card-body">
+              <ControlledEditor value={agentData.quickInfo || ""} onChange={(v) => setAgentData({ ...agentData, quickInfo: v })} placeholder="Add booking info, response times, specialisations…" minHeight="180px" />
+            </div>
+          </div>
+        );
+
+      case "services":
+        return (
+          <div className="acm-card">
+            <div className="acm-card-header">
+              <div className="acm-card-icon" style={{ background: "var(--accent-muted)", color: "var(--accent)" }}><FaSuitcase size={16} /></div>
+              <div><div className="acm-card-title">Services offered</div><div className="acm-card-subtitle">Press Enter or comma to add a service tag</div></div>
+            </div>
+            <div className="acm-card-body">
+              <TagInput label="Services" value={agentData.services || []} onChange={(v) => setAgentData({ ...agentData, services: v })} placeholder="Type a service and press Enter…" />
+            </div>
+          </div>
+        );
+
+      case "agentVideos":
+        return (
+          <div className="acm-card">
+            <div className="acm-card-header">
+              <div className="acm-card-icon" style={{ background: "var(--accent-muted)", color: "var(--accent)" }}><FaVideo size={16} /></div>
+              <div><div className="acm-card-title">Video portfolio</div><div className="acm-card-subtitle">Upload videos showcasing tours and destinations</div></div>
+            </div>
+            <div className="acm-card-body">
+              <MediaUploader label="Videos" accept="video/*" existingUrls={agentData.agentVideos || []} onChange={(urls) => setAgentData({ ...agentData, agentVideos: urls })} folder={getS3Path.agentVideos(agentName)} maxFiles={10} />
+            </div>
+          </div>
+        );
+
+      case "teamProfile":
+        return (
+          <div className="acm-card">
+            <div className="acm-card-header">
+              <div className="acm-card-icon" style={{ background: "var(--accent-muted)", color: "var(--accent)" }}><HiUserGroup size={18} /></div>
+              <div><div className="acm-card-title">Team profile</div><div className="acm-card-subtitle">Personal details and contact information</div></div>
+            </div>
+            <div className="acm-card-body">
+              <div className="acm-grid-2">
+                <Field label="First name" value={agentData.firstName} onChange={(e) => setAgentData({ ...agentData, firstName: e.target.value })} />
+                <Field label="Last name" value={agentData.lastName} onChange={(e) => setAgentData({ ...agentData, lastName: e.target.value })} />
+                <Field label="WhatsApp" value={agentData.whatsapp} onChange={(e) => setAgentData({ ...agentData, whatsapp: e.target.value })} />
+                <Field label="Website" value={agentData.website} onChange={(e) => setAgentData({ ...agentData, website: e.target.value })} />
+              </div>
+            </div>
+          </div>
+        );
+
+      case "agentPhotos":
+        return (
+          <div className="acm-card">
+            <div className="acm-card-header">
+              <div className="acm-card-icon" style={{ background: "var(--accent-muted)", color: "var(--accent)" }}><FaImages size={16} /></div>
+              <div><div className="acm-card-title">Photo gallery</div><div className="acm-card-subtitle">Images displayed in the agency's public gallery</div></div>
+            </div>
+            <div className="acm-card-body">
+              <MediaUploader label="Gallery images" existingUrls={agentData.agentPhotos} onChange={(urls) => setAgentData({ ...agentData, agentPhotos: urls })} folder={getS3Path.agentGallery(agentName)} maxFiles={50} />
+            </div>
+          </div>
+        );
+
+      case "branchAddresses":
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {(agentData.branchAddresses || []).map((addr, idx) => (
+              <div key={addr._id || `branch-${idx}`} className="acm-branch-card">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div className="acm-branch-num">Branch {idx + 1}</div>
+                  <button className="acm-btn-danger-ghost" onClick={() => removeBranch(idx)}><HiTrash size={15} /></button>
+                </div>
+                <div className="acm-grid-3">
+                  <Field label="Building / No." name="houseNo" value={addr.houseNo} onChange={(e) => handleBranchChange(idx, e)} />
+                  <Field label="Street" name="street" value={addr.street} onChange={(e) => handleBranchChange(idx, e)} />
+                  <Field label="Area" name="area" value={addr.area} onChange={(e) => handleBranchChange(idx, e)} />
+                  <Field label="City" name="city" value={addr.city} onChange={(e) => handleBranchChange(idx, e)} />
+                  <Field label="Postal code" name="postalCode" value={addr.postalCode} onChange={(e) => handleBranchChange(idx, e)} />
+                  <Field label="Country" name="country" value={addr.country} onChange={(e) => handleBranchChange(idx, e)} />
+                </div>
+              </div>
+            ))}
+            <button className="acm-btn-add-dashed" onClick={addBranch}>+ Add branch location</button>
+          </div>
+        );
+
       case "tourPackages":
         return (
-          <div className="space-y-10 animate-fadeIn">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-              <div><h3 className="text-2xl font-black text-slate-900 tracking-tight">Travel Inventory</h3><p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Manage assigned itineraries & custom packages</p></div>
-              <button onClick={() => fetchItineraries(selectedAgentId)} className="px-10 py-4 bg-slate-900 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] hover:bg-blue-600 transition-all shadow-xl shadow-slate-200 flex items-center gap-3">
-                <HiTrendingUp className="text-blue-400" /> Refresh Storefront
-              </button>
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            <div className="acm-card">
+              <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", fontFamily: "'Instrument Serif', serif" }}>Travel packages</div>
+                  <div style={{ fontSize: 12, color: "var(--ink-4)", marginTop: 2 }}>Itineraries assigned to this agent</div>
+                </div>
+                <button className="acm-btn-secondary" onClick={() => fetchItineraries(selectedAgentId)}>
+                  <HiTrendingUp size={14} /> Refresh
+                </button>
+              </div>
             </div>
+
             {itinerariesLoading ? (
-              <div className="flex flex-col items-center justify-center py-24 gap-6"><div className="w-16 h-16 border-[6px] border-blue-50 border-t-blue-600 rounded-full animate-spin"></div><p className="text-slate-400 font-black text-xs uppercase tracking-widest">Synchronizing Packages...</p></div>
+              <div style={{ textAlign: "center", padding: "64px 32px", color: "var(--ink-4)", fontSize: 13 }}>Loading packages…</div>
             ) : itineraries.length === 0 ? (
-              <div className="bg-white rounded-[3rem] p-24 text-center border-2 border-dashed border-slate-100"><div className="w-24 h-24 bg-slate-50 rounded-[2rem] flex items-center justify-center mx-auto mb-8 text-slate-300"><FaSuitcase size={48} /></div><h3 className="text-2xl font-black text-slate-900 mb-2">No Active Packages</h3><p className="text-slate-400 text-sm font-medium">Link global itineraries to this agent to build their inventory.</p></div>
+              <div className="acm-empty">
+                <div className="acm-empty-icon"><FaSuitcase size={22} /></div>
+                <div className="acm-empty-title">No packages assigned</div>
+                <div className="acm-empty-text">Link itineraries to this agent to build their inventory.</div>
+              </div>
             ) : (
-              <div className="space-y-10">
-                <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-10">
+              <>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
                   {itineraries.slice((itineraryPage - 1) * ITEMS_PER_PAGE, itineraryPage * ITEMS_PER_PAGE).map((it) => (
-                    <div key={it._id} className="group bg-white rounded-[3rem] border border-slate-100 overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-3 transition-all duration-700 flex flex-col">
-                      <div className="relative h-64 overflow-hidden">
-                        <img src={getImageUrl(it.coverImageUrl)} className="w-full h-full object-cover group-hover:scale-110 transition-all duration-1000" alt="" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent"></div>
-                        <div className="absolute top-6 left-6 flex gap-3">
-                          <span className="px-4 py-2 bg-white/90 backdrop-blur-md rounded-2xl text-[10px] font-black text-slate-900 uppercase tracking-widest shadow-xl">{it.type}</span>
-                          {it.visibility === "Public" && <span className="px-4 py-2 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-emerald-500/20">Active</span>}
+                    <div key={it._id} className="acm-pkg-card">
+                      <div className="acm-pkg-img">
+                        <img src={getImageUrl(it.coverImageUrl)} alt="" />
+                        <div className="acm-pkg-img-overlay" />
+                        <div className="acm-pkg-img-badges">
+                          <span className="acm-badge acm-badge-gray" style={{ fontSize: 10 }}>{it.type}</span>
+                          {it.visibility === "Public" && <span className="acm-badge acm-badge-green" style={{ fontSize: 10 }}>Active</span>}
                         </div>
-                        <div className="absolute bottom-6 left-6 right-6">
-                          <div className="flex items-center gap-2 text-blue-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2"><FaMapMarkerAlt /> {it.destination}</div>
-                          <h4 className="text-xl font-black text-white leading-tight line-clamp-2">{it.title}</h4>
+                        <div className="acm-pkg-img-title">
+                          <div className="acm-pkg-img-dest"><FaMapMarkerAlt size={9} /> {it.destination}</div>
+                          <div className="acm-pkg-img-name">{it.title}</div>
                         </div>
                       </div>
-                      <div className="p-8 flex-1 flex flex-col">
-                        <div className="grid grid-cols-2 gap-6 mb-8">
-                          <div className="flex flex-col"><span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Timeframe</span><span className="text-sm font-black text-slate-900 flex items-center gap-2"><FaClock className="text-blue-500" /> {it.duration}</span></div>
-                          <div className="flex flex-col"><span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Valuation</span><span className="text-sm font-black text-emerald-600">{it.asBestQuote ? "Best Quote" : `₹${it.discountedPrice || it.priceFrom}`}</span></div>
+                      <div className="acm-pkg-body">
+                        <div className="acm-pkg-meta">
+                          <div className="acm-pkg-meta-item">
+                            <span className="acm-pkg-meta-key">Duration</span>
+                            <span className="acm-pkg-meta-val">{it.duration}</span>
+                          </div>
+                          <div className="acm-pkg-meta-item">
+                            <span className="acm-pkg-meta-key">Price</span>
+                            <span className="acm-pkg-meta-val" style={{ color: "var(--green)" }}>{it.asBestQuote ? "Best Quote" : `₹${it.discountedPrice || it.priceFrom}`}</span>
+                          </div>
                         </div>
-                        <div className="flex gap-4 mt-auto">
-                          <button onClick={() => { setSelectedItinerary(it); setShowEditModal(true); }} className="flex-1 bg-blue-600 text-white px-6 py-4 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20 flex items-center justify-center gap-3"><HiOutlinePencilSquare size={18} /> Edit Detailed Package</button>
-                          <button onClick={() => window.open(`${PUBLIC_FRONTEND_URL}/itinerary/${it.slug}`, "_blank")} className="w-14 h-14 bg-slate-50 text-slate-400 rounded-[1.5rem] flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all border border-slate-100 shadow-sm"><HiExternalLink size={24} /></button>
+                        <div className="acm-pkg-actions">
+                          <button className="acm-btn-primary" style={{ flex: 1, justifyContent: "center", fontSize: 11 }} onClick={() => { setSelectedItinerary(it); setShowEditModal(true); }}>
+                            <HiOutlinePencilSquare size={14} /> Edit package
+                          </button>
+                          <button className="acm-btn-secondary" style={{ width: 36, padding: 0, justifyContent: "center" }} onClick={() => window.open(`${PUBLIC_FRONTEND_URL}/itinerary/${it.slug}`, "_blank")}>
+                            <HiExternalLink size={14} />
+                          </button>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
-                
-                {/* Itinerary Pagination Controls */}
-                {itineraries.length > ITEMS_PER_PAGE && (
-                  <div className="flex justify-center items-center gap-3 py-6">
-                    <button 
-                      onClick={() => setItineraryPage(p => Math.max(1, p - 1))}
-                      disabled={itineraryPage === 1}
-                      className="w-12 h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:border-blue-600 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
-                    >
-                      <FaChevronLeft size={14} />
-                    </button>
-                    <div className="flex gap-2">
-                      {[...Array(Math.ceil(itineraries.length / ITEMS_PER_PAGE))].map((_, i) => (
-                        <button
-                          key={i}
-                          onClick={() => setItineraryPage(i + 1)}
-                          className={`w-12 h-12 rounded-2xl font-black text-xs transition-all shadow-sm ${
-                            itineraryPage === i + 1 
-                              ? "bg-slate-900 text-white shadow-xl shadow-slate-200 scale-110" 
-                              : "bg-white text-slate-500 hover:bg-slate-50 border border-slate-100"
-                          }`}
-                        >
-                          {i + 1}
-                        </button>
-                      ))}
-                    </div>
-                    <button 
-                      onClick={() => setItineraryPage(p => Math.min(Math.ceil(itineraries.length / ITEMS_PER_PAGE), p + 1))}
-                      disabled={itineraryPage === Math.ceil(itineraries.length / ITEMS_PER_PAGE)}
-                      className="w-12 h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:border-blue-600 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
-                    >
-                      <FaChevronRight size={14} />
-                    </button>
-                  </div>
-                )}
-              </div>
+                <Pagination current={itineraryPage} total={Math.ceil(itineraries.length / ITEMS_PER_PAGE)} onChange={setItineraryPage} />
+              </>
             )}
           </div>
         );
-      case "reviewsList":
-        return (
-          <div className="space-y-10 animate-fadeIn">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-1 space-y-6">
-                 <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-orange-50 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-1000"></div>
-                    <h3 className="text-xl font-black text-slate-900 mb-1 relative z-10">Feedback Center</h3>
-                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-8 relative z-10">Real-time user submissions</p>
-                    <div className="space-y-6 relative z-10">
-                      <div className="flex justify-between items-center"><span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Total Reviews</span><span className="text-2xl font-black text-slate-900">{publicReviews.length}</span></div>
-                      <div className="flex justify-between items-center"><span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Avg Rating</span><span className="text-2xl font-black text-orange-500">{(publicReviews.reduce((a,c)=>a+c.rating,0)/Math.max(1, publicReviews.length)).toFixed(1)} <FaStar className="inline mb-1" size={16} /></span></div>
-                    </div>
-                 </div>
-              </div>
-              <div className="lg:col-span-2 space-y-8">
-                 {publicReviewsLoading ? <div className="animate-pulse space-y-4">{[1,2].map(i=><div key={i} className="h-40 bg-slate-100 rounded-[2rem]"></div>)}</div> : publicReviews.length === 0 ? <div className="text-center py-20 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200"><HiOutlineChatAlt2 className="mx-auto text-slate-200 mb-4" size={40} /><p className="text-slate-400 font-black uppercase text-[10px] tracking-widest">No customer reviews yet</p></div> : (
-                   <div className="space-y-6">
-                     {publicReviews.slice((reviewPage - 1) * ITEMS_PER_PAGE, reviewPage * ITEMS_PER_PAGE).map(rev => (
-                       <div key={rev._id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all group">
-                         <div className="flex justify-between items-start mb-6">
-                           <div className="flex items-center gap-4">
-                             <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center font-black text-slate-300 border border-slate-100 group-hover:bg-blue-600 group-hover:text-white transition-all">{rev.userName.charAt(0)}</div>
-                             <div><h4 className="font-black text-slate-900 text-sm uppercase tracking-tight">{rev.userName}</h4><div className="flex gap-0.5 mt-1">{[...Array(5)].map((_,i)=><FaStar key={i} size={10} className={i < rev.rating ? "text-orange-400" : "text-slate-100"} />)}</div></div>
-                           </div>
-                           <button onClick={() => deletePublicReview(rev._id)} className="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"><HiTrash size={18} /></button>
-                         </div>
-                         <p className="text-slate-600 text-sm italic leading-relaxed">"{rev.comment}"</p>
-                       </div>
-                     ))}
 
-                     {/* Review Pagination Controls */}
-                     {publicReviews.length > ITEMS_PER_PAGE && (
-                        <div className="flex justify-center items-center gap-3 pt-4">
-                          <button 
-                            onClick={() => setReviewPage(p => Math.max(1, p - 1))}
-                            disabled={reviewPage === 1}
-                            className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-orange-600 hover:border-orange-600 transition-all disabled:opacity-30 shadow-sm"
-                          >
-                            <FaChevronLeft size={12} />
-                          </button>
-                          <div className="flex gap-2">
-                            {[...Array(Math.ceil(publicReviews.length / ITEMS_PER_PAGE))].map((_, i) => (
-                              <button
-                                key={i}
-                                onClick={() => setReviewPage(i + 1)}
-                                className={`w-10 h-10 rounded-xl font-black text-[10px] transition-all ${
-                                  reviewPage === i + 1 
-                                    ? "bg-slate-900 text-white shadow-lg" 
-                                    : "bg-white text-slate-500 border border-slate-100"
-                                }`}
-                              >
-                                {i + 1}
-                              </button>
-                            ))}
+      case "reviewsList": {
+        const avgRating = (publicReviews.reduce((a, c) => a + c.rating, 0) / Math.max(1, publicReviews.length)).toFixed(1);
+        return (
+          <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: 20, alignItems: "start" }}>
+            {/* Stats panel */}
+            <div className="acm-card" style={{ padding: "20px" }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", marginBottom: 16, fontFamily: "'Instrument Serif', serif" }}>Overview</div>
+              <div className="acm-stat-row"><span className="acm-stat-label">Total reviews</span><span className="acm-stat-value">{publicReviews.length}</span></div>
+              <div className="acm-stat-row"><span className="acm-stat-label">Average rating</span><span className="acm-stat-value" style={{ color: "#D97706" }}>{avgRating}</span></div>
+              <button className="acm-btn-primary" style={{ width: "100%", justifyContent: "center", marginTop: 16, fontSize: 11 }} onClick={() => { setEditingReview({ userName: "", rating: 5, comment: "", images: [], agentId: selectedAgentId }); setShowReviewEditModal(true); }}>
+                + New review
+              </button>
+            </div>
+
+            {/* Reviews list */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {publicReviewsLoading ? (
+                <div style={{ textAlign: "center", padding: 40, color: "var(--ink-4)", fontSize: 13 }}>Loading reviews…</div>
+              ) : publicReviews.length === 0 ? (
+                <div className="acm-empty">
+                  <div className="acm-empty-icon"><HiOutlineChatAlt2 size={22} /></div>
+                  <div className="acm-empty-title">No reviews yet</div>
+                  <div className="acm-empty-text">Reviews submitted by customers will appear here.</div>
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
+                    {publicReviews.slice((reviewPage - 1) * ITEMS_PER_PAGE, reviewPage * ITEMS_PER_PAGE).map(rev => (
+                      <div key={rev._id} className="acm-review-card" onClick={() => { setEditingReview(rev); setShowReviewEditModal(true); }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <div style={{ width: 36, height: 36, background: "var(--surface)", border: "1px solid var(--rule)", borderRadius: "var(--radius-sm)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "var(--ink-3)" }}>
+                              {rev.userName?.charAt(0)?.toUpperCase()}
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{rev.userName}</div>
+                              <Stars value={rev.rating} />
+                            </div>
                           </div>
-                          <button 
-                            onClick={() => setReviewPage(p => Math.min(Math.ceil(publicReviews.length / ITEMS_PER_PAGE), p + 1))}
-                            disabled={reviewPage === Math.ceil(publicReviews.length / ITEMS_PER_PAGE)}
-                            className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-orange-600 hover:border-orange-600 transition-all disabled:opacity-30 shadow-sm"
-                          >
-                            <FaChevronRight size={12} />
-                          </button>
+                          <div style={{ display: "flex", gap: 4 }}>
+                            <button className="acm-btn-ghost" onClick={(e) => { e.stopPropagation(); setEditingReview(rev); setShowReviewEditModal(true); }}><HiPencil size={14} /></button>
+                            <button className="acm-btn-danger-ghost" onClick={(e) => { e.stopPropagation(); deleteReview(rev._id); }}><HiTrash size={14} /></button>
+                          </div>
                         </div>
-                      )}
-                   </div>
-                 )}
-              </div>
+                        <p style={{ fontSize: 12, color: "var(--ink-3)", lineHeight: 1.6, margin: 0 }}>"{rev.comment}"</p>
+                        {rev.images?.length > 0 && (
+                          <div style={{ display: "flex", gap: 6, marginTop: 10, overflowX: "auto" }}>
+                            {rev.images.map((img, i) => <img key={i} src={getImageUrl(img)} style={{ width: 52, height: 52, objectFit: "cover", borderRadius: 6, flexShrink: 0 }} alt="" />)}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <Pagination current={reviewPage} total={Math.ceil(publicReviews.length / ITEMS_PER_PAGE)} onChange={setReviewPage} />
+                </>
+              )}
             </div>
           </div>
         );
+      }
+
       case "blogs":
         return (
-          <div className="space-y-8 animate-fadeIn">
-            <div className="flex justify-between items-center bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-              <div><h3 className="text-2xl font-black text-slate-900 tracking-tight">Content Studio</h3><p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Manage travel stories & agency news</p></div>
-              <button onClick={() => setAgentData({...agentData, blogs: [{title: "", content: "", image: "", isPublished: true, createdAt: new Date()}, ...(agentData.blogs || [])]})} className="px-10 py-4 bg-purple-600 text-white rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] hover:bg-purple-700 transition-all shadow-xl shadow-purple-200">+ New Story</button>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ fontSize: 13, color: "var(--ink-3)" }}>{(agentData.blogs || []).length} article{(agentData.blogs || []).length !== 1 ? "s" : ""}</div>
+              <button className="acm-btn-primary" style={{ fontSize: 11 }} onClick={() => setAgentData({ ...agentData, blogs: [{ _id: `temp-${Date.now()}`, title: "", content: "", image: "", isPublished: true, createdAt: new Date() }, ...(agentData.blogs || [])] })}>
+                + New article
+              </button>
             </div>
-            <div className="grid grid-cols-1 gap-10">
-              {(agentData.blogs || []).map((blog, idx) => (
-                <div key={idx} className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm hover:shadow-2xl transition-all duration-500">
-                  <div className="flex justify-between items-center mb-8">
-                    <span className="px-4 py-2 bg-purple-50 text-purple-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-purple-100">Draft #{idx + 1}</span>
-                    <button onClick={() => setAgentData({...agentData, blogs: agentData.blogs.filter((_,i)=>i!==idx)})} className="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"><HiTrash size={18} /></button>
+            {(agentData.blogs || []).map((blog, idx) => (
+              <div key={blog._id || `blog-${idx}`} className="acm-blog-card">
+                <div className="acm-blog-card-bar" />
+                <div className="acm-blog-card-body">
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                    <span className="acm-badge acm-badge-blue">Article {idx + 1}</span>
+                    <button className="acm-btn-danger-ghost" onClick={() => setAgentData({ ...agentData, blogs: agentData.blogs.filter((_, i) => i !== idx) })}><HiTrash size={15} /></button>
                   </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                    <div className="space-y-8">
-                       <Field label="Blog Title" value={blog.title} onChange={(e) => { const n = [...agentData.blogs]; n[idx].title = e.target.value; setAgentData({...agentData, blogs: n}); }} />
-                       <MediaUploader label="Feature Image" existingUrls={blog.image ? [blog.image] : []} onChange={(urls) => { const n = [...agentData.blogs]; n[idx].image = urls[0]; setAgentData({...agentData, blogs: n}); }} folder={getS3Path.agentBlogs(agentName)} />
+                  <div className="acm-grid-2" style={{ gap: 20 }}>
+                    <div className="acm-field">
+                      <label className="acm-label">Title</label>
+                      <input className="acm-input" value={blog.title} onChange={(e) => { const n = [...agentData.blogs]; n[idx].title = e.target.value; setAgentData({ ...agentData, blogs: n }); }} placeholder="Article title" />
                     </div>
-                    <div className="space-y-4">
-                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Article Content</label>
-                       <ReactQuill theme="snow" value={blog.content} onChange={(val) => { const n = [...agentData.blogs]; n[idx].content = val; setAgentData({...agentData, blogs: n}); }} className="bg-slate-50 rounded-3xl overflow-hidden border-none" style={{ minHeight: '300px' }} />
+                    <div style={{ display: "flex", alignItems: "flex-end" }}>
+                      <MediaUploader label="Feature image" existingUrls={blog.image ? [blog.image] : []} onChange={(urls) => { const n = [...agentData.blogs]; n[idx].image = urls[0]; setAgentData({ ...agentData, blogs: n }); }} folder={getS3Path.blog(agentName, blog.title)} />
+                    </div>
+                    <div className="acm-span-2">
+                      <div className="acm-field">
+                        <label className="acm-label">Content</label>
+                        <ControlledEditor value={blog.content} onChange={(v) => { const n = [...agentData.blogs]; n[idx].content = v; setAgentData({ ...agentData, blogs: n }); }} placeholder="Write your article…" minHeight="220px" />
+                      </div>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
+            {(agentData.blogs || []).length === 0 && <div className="acm-empty"><div className="acm-empty-icon"><FaBlog size={20} /></div><div className="acm-empty-title">No articles yet</div><div className="acm-empty-text">Create your first article to share travel stories.</div></div>}
           </div>
         );
+
       case "testimonials":
-        return <TestimonialEditor testimonials={agentData.testimonials || []} onChange={(val) => setAgentData({...agentData, testimonials: val})} agentName={agentName} agentId={selectedAgentId} />;
-      case "agentPhotos":
-        return <div className="bg-white p-12 rounded-[3rem] border border-slate-100 shadow-sm"><MediaUploader label="Agency Gallery Portfolio" existingUrls={agentData.agentPhotos} onChange={(urls) => setAgentData({...agentData, agentPhotos: urls})} folder={getS3Path.agentGallery(agentName)} maxFiles={50} /></div>;
-      case "branchAddresses":
-        return (
-          <div className="space-y-8 animate-fadeIn">
-             {(agentData.branchAddresses || []).map((addr, idx) => (
-               <div key={idx} className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm relative group hover:border-slate-300 transition-all">
-                  <button onClick={() => removeBranchAddress(idx)} className="absolute top-6 right-6 w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"><HiTrash size={20} /></button>
-                  <h4 className="text-xs font-black text-blue-600 uppercase tracking-[0.2em] mb-10">Operational Branch #{idx + 1}</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                     <Field label="Building / No." name="houseNo" value={addr.houseNo} onChange={(e) => handleBranchAddressChange(idx, e)} />
-                     <Field label="Street / Landmark" name="street" value={addr.street} onChange={(e) => handleBranchAddressChange(idx, e)} />
-                     <Field label="Area" name="area" value={addr.area} onChange={(e) => handleBranchAddressChange(idx, e)} />
-                     <Field label="City" name="city" value={addr.city} onChange={(e) => handleBranchAddressChange(idx, e)} />
-                     <Field label="Postal Code" name="postalCode" value={addr.postalCode} onChange={(e) => handleBranchAddressChange(idx, e)} />
-                     <Field label="Country" name="country" value={addr.country} onChange={(e) => handleBranchAddressChange(idx, e)} />
-                  </div>
-               </div>
-             ))}
-             <button onClick={addBranchAddress} className="w-full py-10 border-2 border-dashed border-slate-200 rounded-[3rem] text-slate-400 font-black uppercase tracking-[0.2em] text-[10px] hover:border-blue-500 hover:text-blue-600 transition-all hover:bg-blue-50/30">+ Register New Office Location</button>
-          </div>
-        );
+        return <TestimonialEditor testimonials={agentData.testimonials || []} onChange={(v) => setAgentData({ ...agentData, testimonials: v })} agentName={agentName} />;
+
       default: return null;
     }
   };
 
+  const currentSection = SECTIONS.find(s => s.id === selectedSection);
+
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-24 selection:bg-blue-100 selection:text-blue-900">
-      <style>{QUILL_STYLE}</style>
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-[60] backdrop-blur-md bg-white/90">
-        <div className="max-w-[1700px] mx-auto px-8 lg:px-12 h-24 flex items-center justify-between">
-          <div className="flex items-center gap-10">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-red-600 to-blue-700 rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-blue-200"><FaUser size={20} /></div>
-              <div><h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Content Manager</h1><p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1.5">Elite Administrative Control</p></div>
+    <div className="acm-root">
+      <style>{DESIGN_TOKENS}</style>
+
+      {/* Nav */}
+      <nav className="acm-nav">
+        <div className="acm-nav-inner">
+          <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+            <div className="acm-nav-brand">
+              <div className="acm-nav-logo"><FaUser size={14} /></div>
+              <div>
+                <div className="acm-nav-title">Content Manager</div>
+              </div>
             </div>
-            <div className="hidden md:flex items-center bg-slate-50 border border-slate-200 rounded-[1.5rem] px-6 py-3 gap-4 focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:border-blue-500 transition-all min-w-[380px]">
-              <HiSearch className="text-slate-400" size={20} />
-              <select className="bg-transparent border-none outline-none text-sm font-black text-slate-700 w-full cursor-pointer appearance-none" value={selectedAgentId} onChange={(e) => setSelectedAgentId(e.target.value)}>
-                <option value="">Select Authorized Partner...</option>
+            <div style={{ width: 1, height: 28, background: "var(--rule)" }} />
+            <div className="acm-select-wrap">
+              <HiSearch size={14} />
+              <select value={selectedAgentId} onChange={(e) => setSelectedAgentId(e.target.value)}>
+                <option value="">Select a partner…</option>
                 {agents.map(a => <option key={a._id} value={a._id}>{a.company || `${a.firstName} ${a.lastName}`}</option>)}
               </select>
             </div>
           </div>
-          <div className="flex items-center gap-6">
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {selectedAgentId && (
-              <button onClick={handleSave} disabled={saving} className="px-10 py-4 bg-gradient-to-r from-red-600 to-blue-700 text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-[10px] hover:shadow-2xl hover:shadow-blue-200 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-3">
-                {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <HiSave size={20} />}
-                {saving ? "Synchronizing..." : "Save Brand Profile"}
+              <button className="acm-save-btn" onClick={handleSave} disabled={saving}>
+                {saving ? <div className="acm-spin" /> : <HiSave size={14} />}
+                {saving ? "Saving…" : "Save changes"}
               </button>
             )}
-            <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 border border-slate-200 overflow-hidden shadow-sm">
-               {agentData?.photo ? <img src={getImageUrl(agentData.photo)} className="w-full h-full object-cover" /> : <FaUser size={24} />}
+            <div style={{ width: 34, height: 34, borderRadius: "var(--radius-sm)", background: "var(--surface)", border: "1px solid var(--rule)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ink-4)" }}>
+              {agentData?.photo ? <img src={getImageUrl(agentData.photo)} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" /> : <FaUser size={14} />}
             </div>
           </div>
         </div>
-      </div>
+      </nav>
 
-      <div className="max-w-[1700px] mx-auto px-8 lg:px-12 pt-12">
-        <div className="grid grid-cols-12 gap-12">
-          <div className="col-span-12 lg:col-span-3">
-            <div className="bg-white rounded-[3rem] border border-slate-200 shadow-sm overflow-hidden sticky top-36">
-              <div className="p-10 border-b border-slate-100 bg-slate-50/50"><h3 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-1.5">Command Center</h3><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Sectional Management</p></div>
-              <div className="p-4 space-y-2">
-                {SECTIONS.map(section => (
-                  <button key={section.id} onClick={() => setSelectedSection(section.id)} className={`w-full flex items-center justify-between p-5 rounded-[1.5rem] transition-all group relative overflow-hidden ${selectedSection === section.id ? "bg-slate-900 text-white shadow-2xl shadow-slate-300" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`}>
-                    <div className="flex items-center gap-5 relative z-10">
-                      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${selectedSection === section.id ? `bg-gradient-to-br ${section.color} text-white shadow-lg` : "bg-slate-100 text-slate-400 group-hover:bg-white"}`}>{section.icon}</div>
-                      <span className="font-black text-xs uppercase tracking-[0.1em]">{section.label}</span>
-                    </div>
-                    {selectedSection === section.id && <div className="w-1.5 h-6 bg-blue-500 rounded-full relative z-10 shadow-[0_0_15px_rgba(59,130,246,0.5)]"></div>}
-                  </button>
-                ))}
-              </div>
-            </div>
+      {/* Layout */}
+      <div className="acm-layout">
+        {/* Sidebar */}
+        <aside className="acm-sidebar">
+          <div className="acm-sidebar-header">
+            <div className="acm-sidebar-header-label">Sections</div>
           </div>
+          <nav className="acm-sidebar-nav">
+            {SECTIONS.map(s => (
+              <button key={s.id} className={`acm-nav-item ${selectedSection === s.id ? "active" : ""}`} onClick={() => setSelectedSection(s.id)}>
+                <div className="acm-nav-item-icon">{s.icon}</div>
+                <span className="acm-nav-item-label">{s.label}</span>
+                <div className="acm-nav-item-dot" />
+              </button>
+            ))}
+          </nav>
+        </aside>
 
-          <div className="col-span-12 lg:col-span-9">
-            {!selectedAgentId ? (
-              <div className="bg-white rounded-[4rem] border border-slate-200 shadow-sm p-32 flex flex-col items-center justify-center text-center">
-                <div className="w-24 h-24 bg-blue-50 rounded-[2.5rem] flex items-center justify-center text-blue-600 mb-10 animate-bounce shadow-2xl shadow-blue-100"><FaUser size={48} /></div>
-                <h3 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">Partner Access Restricted</h3>
-                <p className="text-slate-400 text-sm font-medium max-w-sm leading-relaxed mx-auto uppercase tracking-widest">Select a verified travel partner to begin brand synchronization.</p>
-              </div>
-            ) : (
-              <div className="space-y-12">
-                 <div className="flex items-center justify-between"><div className="flex items-center gap-6"><div className={`w-3 h-12 rounded-full bg-gradient-to-b ${SECTIONS.find(s => s.id === selectedSection)?.color} shadow-lg`}></div><div><h2 className="text-4xl font-black text-slate-900 tracking-tight leading-none">{SECTIONS.find(s => s.id === selectedSection)?.label}</h2><p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-3">Active Workspace · Profile Integrity Monitoring</p></div></div></div>
-                 {renderSectionEditor()}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Edit Itinerary Modal */}
-      {showEditModal && selectedItinerary && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-md">
-          <div className="bg-white rounded-[3.5rem] w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-100 animate-scaleUp">
-            <div className="p-10 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <div className="flex items-center gap-6">
-                <div className="w-16 h-16 bg-blue-600 rounded-[1.5rem] flex items-center justify-center text-white shadow-2xl shadow-blue-200"><FaSuitcase size={32} /></div>
-                <div><h3 className="text-2xl font-black text-slate-900 tracking-tight">Refine Itinerary</h3><p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Package Calibration & Logistics</p></div>
-              </div>
-              <button onClick={() => setShowEditModal(false)} className="w-14 h-14 bg-white border border-slate-200 rounded-2xl flex items-center justify-center text-slate-400 hover:text-slate-900 hover:border-slate-900 transition-all shadow-sm"><HiXMark size={28} /></button>
+        {/* Main */}
+        <main className="acm-main">
+          {!selectedAgentId ? (
+            <div className="acm-landing">
+              <div className="acm-landing-icon"><FaUser size={26} /></div>
+              <h3>Select a partner to begin</h3>
+              <p>Choose a verified travel partner from the dropdown above to manage their profile content.</p>
             </div>
-            <div className="p-10 overflow-y-auto space-y-10">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <Field label="Package Title" value={selectedItinerary.title} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, title: e.target.value })} />
-                <Field label="Travel Duration" value={selectedItinerary.duration} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, duration: e.target.value })} />
-                <Field label="Primary Destination" value={selectedItinerary.destination} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, destination: e.target.value })} />
-                <div className="grid grid-cols-2 gap-6">
-                  <Field label="Standard Rate" type="number" value={selectedItinerary.priceFrom} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, priceFrom: e.target.value })} />
-                  <Field label="Offer Rate" type="number" value={selectedItinerary.discountedPrice} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, discountedPrice: e.target.value })} />
+          ) : loading ? (
+            <div style={{ textAlign: "center", padding: "80px 0", color: "var(--ink-4)", fontSize: 13 }}>Loading profile…</div>
+          ) : (
+            <>
+              <div className="acm-section-header" style={{ marginBottom: 20 }}>
+                <div>
+                  <h2 className="acm-section-title">{currentSection?.label}</h2>
+                  <div className="acm-section-crumb">{agentName} · {currentSection?.label}</div>
                 </div>
               </div>
-              <div className="p-10 bg-slate-50 rounded-[3rem] border border-slate-100"><MediaUploader label="Itinerary Visual Assets" existingUrls={selectedItinerary.gallery || [selectedItinerary.coverImageUrl].filter(Boolean)} onChange={(urls) => setSelectedItinerary({ ...selectedItinerary, gallery: urls, coverImageUrl: urls[0] || "" })} onBusy={setMediaBusy} folder={getS3Path.itinerary(agentName, selectedItinerary.title)} /></div>
-              <div className="space-y-10">
-                <TextAreaField label="Executive Summary" rows={6} value={selectedItinerary.destinationDetail || selectedItinerary.shortDescription} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, destinationDetail: e.target.value, shortDescription: e.target.value })} />
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                  <TextAreaField label="Inclusions" value={Array.isArray(selectedItinerary.inclusions) ? selectedItinerary.inclusions.join(", ") : selectedItinerary.inclusions} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, inclusions: e.target.value })} />
-                  <TextAreaField label="Exclusions" value={Array.isArray(selectedItinerary.exclusions) ? selectedItinerary.exclusions.join(", ") : selectedItinerary.exclusions} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, exclusions: e.target.value })} />
+              {renderSection()}
+            </>
+          )}
+        </main>
+      </div>
+
+      {/* Itinerary modal */}
+      {showEditModal && selectedItinerary && (
+        <div className="acm-modal-backdrop">
+          <div className="acm-modal" style={{ maxWidth: 900 }}>
+            <div className="acm-modal-header">
+              <div>
+                <div className="acm-modal-title">Edit package</div>
+                <div className="acm-modal-subtitle">{selectedItinerary.title}</div>
+              </div>
+              <button className="acm-modal-close" onClick={() => setShowEditModal(false)}><HiXMark size={16} /></button>
+            </div>
+            <div className="acm-modal-body" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+              <div className="acm-grid-2">
+                <Field label="Title" value={selectedItinerary.title} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, title: e.target.value })} />
+                <Field label="Duration" value={selectedItinerary.duration} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, duration: e.target.value })} />
+                <Field label="Destination" value={selectedItinerary.destination} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, destination: e.target.value })} />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <Field label="Standard rate" type="number" value={selectedItinerary.priceFrom} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, priceFrom: e.target.value })} />
+                  <Field label="Offer rate" type="number" value={selectedItinerary.discountedPrice} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, discountedPrice: e.target.value })} />
+                </div>
+              </div>
+
+              <div style={{ background: "var(--surface)", borderRadius: "var(--radius-lg)", padding: 20, border: "1px solid var(--rule)" }}>
+                <MediaUploader label="Cover image" existingUrls={selectedItinerary.gallery || [selectedItinerary.coverImageUrl].filter(Boolean)} onChange={(urls) => setSelectedItinerary({ ...selectedItinerary, gallery: urls, coverImageUrl: urls[0] || "" })} onBusy={setMediaBusy} folder={getS3Path.itinerary(agentName, selectedItinerary.title)} />
+              </div>
+
+              <TextAreaField label="Description" rows={5} value={selectedItinerary.destinationDetail || selectedItinerary.shortDescription} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, destinationDetail: e.target.value, shortDescription: e.target.value })} />
+
+              <div className="acm-grid-2">
+                <TextAreaField label="Inclusions" value={Array.isArray(selectedItinerary.inclusions) ? selectedItinerary.inclusions.join(", ") : selectedItinerary.inclusions} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, inclusions: e.target.value })} rows={4} />
+                <TextAreaField label="Exclusions" value={Array.isArray(selectedItinerary.exclusions) ? selectedItinerary.exclusions.join(", ") : selectedItinerary.exclusions} onChange={(e) => setSelectedItinerary({ ...selectedItinerary, exclusions: e.target.value })} rows={4} />
+              </div>
+
+              {/* Day plans */}
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--ink-3)" }}>Day-by-day itinerary</div>
+                  <button className="acm-btn-secondary" style={{ fontSize: 11 }} onClick={() => setSelectedItinerary({ ...selectedItinerary, dayPlans: [...(selectedItinerary.dayPlans || []), { day: (selectedItinerary.dayPlans || []).length + 1, title: `Day ${(selectedItinerary.dayPlans || []).length + 1}`, locationDetail: "" }] })}>
+                    + Add day
+                  </button>
                 </div>
                 {(!selectedItinerary.dayPlans || selectedItinerary.dayPlans.length === 0) ? (
-                  <div className="text-center py-20 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
-                    <p className="text-slate-400 font-black uppercase tracking-widest text-[10px] mb-6">No day-by-day logistics added</p>
-                    <button onClick={() => setSelectedItinerary({ ...selectedItinerary, dayPlans: [{ day: 1, title: "Day 1", locationDetail: "" }] })} className="px-12 py-5 bg-blue-600 text-white rounded-[2rem] font-black uppercase tracking-widest text-xs shadow-2xl shadow-blue-500/20">+ Initialize Day Plans</button>
+                  <div className="acm-empty" style={{ padding: "32px 20px" }}>
+                    <div className="acm-empty-text">No day plans added yet.</div>
                   </div>
                 ) : (
-                  <div className="bg-blue-50/30 p-10 rounded-[3rem] border border-blue-100 space-y-8">
-                    <div className="flex justify-between items-center"><h4 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-3"><FaClock className="text-blue-600" /> Itinerary Timeline ({selectedItinerary.dayPlans.length} Days)</h4><button onClick={() => setSelectedItinerary({ ...selectedItinerary, dayPlans: [...selectedItinerary.dayPlans, { day: selectedItinerary.dayPlans.length + 1, title: `Day ${selectedItinerary.dayPlans.length + 1}`, locationDetail: "" }] })} className="px-6 py-2.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl">+ Add Segment</button></div>
-                    <div className="space-y-6">
-                      {selectedItinerary.dayPlans.map((plan, i) => (
-                        <div key={i} className="bg-white p-8 rounded-[2rem] border border-blue-100 shadow-sm relative group">
-                          <button onClick={() => setSelectedItinerary({ ...selectedItinerary, dayPlans: selectedItinerary.dayPlans.filter((_, idx) => idx !== i).map((p, idx) => ({ ...p, day: idx + 1 })) })} className="absolute top-4 right-4 w-8 h-8 bg-red-50 text-red-500 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"><HiXMark size={16} /></button>
-                          <div className="flex gap-6">
-                            <span className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-sm font-black flex-shrink-0 shadow-lg shadow-blue-200">D{plan.day}</span>
-                            <div className="flex-1 space-y-3">
-                              <input className="w-full font-black text-slate-900 outline-none text-lg bg-transparent border-b-2 border-transparent focus:border-blue-500 transition-all" value={plan.title} onChange={(e) => { const n = [...selectedItinerary.dayPlans]; n[i].title = e.target.value; setSelectedItinerary({...selectedItinerary, dayPlans: n}); }} />
-                              <textarea className="w-full text-sm text-slate-500 outline-none bg-transparent resize-none leading-relaxed" rows={2} value={plan.locationDetail} onChange={(e) => { const n = [...selectedItinerary.dayPlans]; n[i].locationDetail = e.target.value; setSelectedItinerary({...selectedItinerary, dayPlans: n}); }} />
-                            </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {selectedItinerary.dayPlans.map((plan, i) => (
+                      <div key={i} className="acm-day-card">
+                        <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                          <div className="acm-day-badge">D{plan.day}</div>
+                          <div style={{ flex: 1 }}>
+                            <input className="acm-input" value={plan.title} onChange={(e) => { const n = [...selectedItinerary.dayPlans]; n[i].title = e.target.value; setSelectedItinerary({ ...selectedItinerary, dayPlans: n }); }} style={{ marginBottom: 8, fontWeight: 600 }} />
+                            <textarea className="acm-textarea" rows={2} value={plan.locationDetail} onChange={(e) => { const n = [...selectedItinerary.dayPlans]; n[i].locationDetail = e.target.value; setSelectedItinerary({ ...selectedItinerary, dayPlans: n }); }} placeholder="Description…" />
                           </div>
+                          <button className="acm-btn-danger-ghost" onClick={() => setSelectedItinerary({ ...selectedItinerary, dayPlans: selectedItinerary.dayPlans.filter((_, idx) => idx !== i).map((p, idx) => ({ ...p, day: idx + 1 })) })}><HiXMark size={14} /></button>
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
             </div>
-            <div className="p-10 bg-slate-50/50 border-t border-slate-100 flex justify-end gap-6">
-              <button onClick={() => setShowEditModal(false)} className="px-10 py-5 text-slate-400 font-black uppercase tracking-widest text-[10px] hover:text-slate-900 transition-colors">Abort Changes</button>
-              <button disabled={itineraryUpdating || mediaBusy} onClick={async () => {
+            <div className="acm-modal-footer">
+              <button className="acm-btn-secondary" onClick={() => setShowEditModal(false)}>Cancel</button>
+              <button className="acm-btn-primary" disabled={itineraryUpdating || mediaBusy} onClick={async () => {
                 setItineraryUpdating(true);
                 try {
                   const token = localStorage.getItem("token");
                   await axios.put(`${API_BASE}/api/agent-itineraries/${selectedItinerary.slug}`, selectedItinerary, { headers: { Authorization: `Bearer ${token}` } });
-                  toast.success("Inventory segment updated!"); setShowEditModal(false); fetchItineraries(selectedAgentId);
-                } catch (e) { toast.error("Sync Failure"); } finally { setItineraryUpdating(false); }
-              }} className="px-12 py-5 bg-slate-900 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] text-[10px] hover:bg-blue-600 transition-all shadow-2xl disabled:opacity-50 flex items-center gap-4">
-                {(itineraryUpdating || mediaBusy) && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>}
-                {mediaBusy ? "Processing Assets..." : itineraryUpdating ? "Synchronizing..." : "Commit Update"}
+                  toast.success("Package updated"); setShowEditModal(false); fetchItineraries(selectedAgentId);
+                } catch { toast.error("Failed to update package"); } finally { setItineraryUpdating(false); }
+              }}>
+                {(itineraryUpdating || mediaBusy) && <div className="acm-spin" />}
+                {mediaBusy ? "Uploading…" : itineraryUpdating ? "Saving…" : "Save package"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Review modal */}
+      {showReviewEditModal && editingReview && (
+        <div className="acm-modal-backdrop">
+          <div className="acm-modal" style={{ maxWidth: 640 }}>
+            <div className="acm-modal-header">
+              <div>
+                <div className="acm-modal-title">{editingReview._id ? "Edit review" : "New review"}</div>
+                <div className="acm-modal-subtitle">Customer feedback entry</div>
+              </div>
+              <button className="acm-modal-close" onClick={() => setShowReviewEditModal(false)}><HiXMark size={16} /></button>
+            </div>
+            <div className="acm-modal-body" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+              <div className="acm-grid-2">
+                <Field label="Reviewer name" value={editingReview.userName} onChange={(e) => setEditingReview({ ...editingReview, userName: e.target.value })} />
+                <div className="acm-field">
+                  <label className="acm-label">Rating</label>
+                  <div style={{ display: "flex", gap: 8, paddingTop: 4 }}>
+                    {[1,2,3,4,5].map(s => (
+                      <button key={s} onClick={() => setEditingReview({ ...editingReview, rating: s })}
+                        style={{ width: 36, height: 36, borderRadius: "var(--radius-sm)", border: "1px solid", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.1s", background: editingReview.rating >= s ? "#F59E0B" : "var(--surface)", borderColor: editingReview.rating >= s ? "#F59E0B" : "var(--rule)", color: editingReview.rating >= s ? "white" : "var(--ink-4)" }}>
+                        <FaStar size={14} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <TextAreaField label="Review text" rows={5} value={editingReview.comment} onChange={(e) => setEditingReview({ ...editingReview, comment: e.target.value })} placeholder="Customer's feedback…" />
+              <div style={{ background: "var(--surface)", borderRadius: "var(--radius-lg)", padding: 16, border: "1px solid var(--rule)" }}>
+                <MediaUploader label="Attached images" existingUrls={editingReview.images || []} onChange={(urls) => setEditingReview({ ...editingReview, images: urls })} onBusy={setMediaBusy} folder={getS3Path.agentReviews(agentName)} maxFiles={5} />
+              </div>
+            </div>
+            <div className="acm-modal-footer">
+              <button className="acm-btn-secondary" onClick={() => setShowReviewEditModal(false)}>Cancel</button>
+              <button className="acm-btn-primary" disabled={mediaBusy} onClick={updateReview}>
+                {mediaBusy && <div className="acm-spin" />}
+                {mediaBusy ? "Uploading…" : "Save review"}
               </button>
             </div>
           </div>
