@@ -1108,7 +1108,7 @@ const AgentContentManager = () => {
               <HiSearch size={14} />
               <select value={selectedAgentId} onChange={(e) => setSelectedAgentId(e.target.value)}>
                 <option value="">Select a partner…</option>
-                {agents.map(a => <option key={a._id} value={a._id}>{a.company || `${a.firstName} ${a.lastName}`}</option>)}
+                {agents.map(a => <option key={a._id} value={a._id}>{a.firstName} {a.lastName} ({a.company || 'Individual'})</option>)}
               </select>
             </div>
           </div>

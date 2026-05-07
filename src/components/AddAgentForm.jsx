@@ -9,13 +9,15 @@ import { getS3Path } from "../utils/pathUtils";
 
 // ── Helpers defined OUTSIDE the component so they are never re-created on re-render ──
 
+import { validateEmail, validatePhone, validateName, validateRequired } from "../utils/validation";
+
 const SectionTitle = ({ title }) => (
   <div className="border-b border-gray-200 pb-2 mt-2">
     <h2 className="text-base font-semibold text-red-700">{title}</h2>
   </div>
 );
 
-const Field = ({ label, id, name, type = "text", required = false, placeholder, value, onChange }) => (
+const Field = ({ label, id, name, type = "text", required = false, placeholder, value, onChange, error }) => (
   <div className="flex flex-col w-full">
     <label htmlFor={id} className="text-sm font-medium text-gray-700 mb-1">
       {label} {required && <span className="text-red-500">*</span>}
@@ -28,12 +30,13 @@ const Field = ({ label, id, name, type = "text", required = false, placeholder, 
       onChange={onChange}
       placeholder={placeholder || `Enter ${label.toLowerCase()}`}
       required={required}
-      className="border border-gray-300 rounded-md px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-red-500"
+      className={`border rounded-md px-4 py-2 w-full focus:outline-none focus:ring-2 ${error ? 'border-red-500 focus:ring-red-500 ring-1 ring-red-500' : 'border-gray-300 focus:ring-red-500'}`}
     />
+    {error && <p className="text-red-500 text-[10px] mt-1 font-semibold">{error}</p>}
   </div>
 );
 
-const TextAreaField = ({ label, id, name, rows = 3, placeholder, value, onChange }) => (
+const TextAreaField = ({ label, id, name, rows = 3, placeholder, value, onChange, error }) => (
   <div className="flex flex-col w-full sm:col-span-2">
     <label htmlFor={id} className="text-sm font-medium text-gray-700 mb-1">
       {label}
@@ -45,8 +48,9 @@ const TextAreaField = ({ label, id, name, rows = 3, placeholder, value, onChange
       onChange={onChange}
       rows={rows}
       placeholder={placeholder}
-      className="border border-gray-300 rounded-md px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-red-500"
+      className={`border rounded-md px-4 py-2 w-full focus:outline-none focus:ring-2 ${error ? 'border-red-500 focus:ring-red-500 ring-1 ring-red-500' : 'border-gray-300 focus:ring-red-500'}`}
     />
+    {error && <p className="text-red-500 text-[10px] mt-1 font-semibold">{error}</p>}
   </div>
 );
 
@@ -69,9 +73,14 @@ const AddAgentForm = () => {
     companyAddress: { houseNo: "", street: "", area: "", city: "", state: "", postalCode: "", country: "" },
   });
 
+  const [errors, setErrors] = useState({});
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: null }));
+    }
   };
 
   const handleSecondaryEmailChange = (index, value) => {
@@ -87,10 +96,29 @@ const AddAgentForm = () => {
     setFormData((prev) => ({ ...prev, companyAddress: { ...prev.companyAddress, [name]: value } }));
   };
 
+  const validate = () => {
+    const newErrors = {};
+    newErrors.firstName = validateName(formData.firstName, "First Name");
+    newErrors.lastName = validateName(formData.lastName, "Last Name");
+    newErrors.company = validateCompanyName(formData.company, "Company Name");
+    newErrors.email = validateEmail(formData.email);
+    newErrors.phone = validatePhone(formData.phone);
+    newErrors.password = validateRequired(formData.password, "Password");
+    if (formData.password && formData.password.length < 6) newErrors.password = "Password must be at least 6 characters";
 
+    // Remove null values
+    Object.keys(newErrors).forEach(key => newErrors[key] === null && delete newErrors[key]);
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validate()) {
+      toast.error("Please fix the highlighted errors");
+      return;
+    }
     try {
       const token = localStorage.getItem("token");
       const apiBase = import.meta.env.VITE_API_BASE || "";
@@ -129,18 +157,18 @@ const AddAgentForm = () => {
         </div>
       </header>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
 
         {/* ── Basic Info ─────────────────────────────── */}
         <SectionTitle title="Basic Information" />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <Field label="First Name" id="firstName" name="firstName" value={formData.firstName} onChange={handleChange} required placeholder="Enter first name" />
-          <Field label="Last Name" id="lastName" name="lastName" value={formData.lastName} onChange={handleChange} placeholder="Enter last name" />
-          <Field label="Company Name" id="company" name="company" value={formData.company} onChange={handleChange} placeholder="Enter company name" />
-          <Field label="Email" id="email" type="email" value={formData.email} onChange={handleChange} required placeholder="Enter agent email" />
-          <Field label="Phone Number" id="phone" type="tel" value={formData.phone} onChange={handleChange} required placeholder="Enter phone number" />
-          <Field label="Create Password" id="password" type="password" value={formData.password} onChange={handleChange} required placeholder="Enter secure password" />
+          <Field label="First Name" id="firstName" name="firstName" value={formData.firstName} onChange={handleChange} required placeholder="Enter first name" error={errors.firstName} />
+          <Field label="Last Name" id="lastName" name="lastName" value={formData.lastName} onChange={handleChange} placeholder="Enter last name" error={errors.lastName} />
+          <Field label="Company Name" id="company" name="company" value={formData.company} onChange={handleChange} placeholder="Enter company name" error={errors.company} />
+          <Field label="Email" id="email" type="email" value={formData.email} onChange={handleChange} required placeholder="Enter agent email" error={errors.email} />
+          <Field label="Phone Number" id="phone" type="tel" value={formData.phone} onChange={handleChange} required placeholder="Enter phone number" error={errors.phone} />
+          <Field label="Create Password" id="password" type="password" value={formData.password} onChange={handleChange} required placeholder="Enter secure password" error={errors.password} />
         </div>
 
         {/* ── Additional Info ────────────────────────── */}

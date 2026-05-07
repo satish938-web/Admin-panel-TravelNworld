@@ -147,7 +147,7 @@ const Enquiry = () => {
               <option value="">All Agents / Global</option>
               {agents.map((agent) => (
                 <option key={agent._id} value={agent._id}>
-                  {agent.firstName} {agent.lastName}
+                  {agent.firstName} {agent.lastName} ({agent.company || 'Individual'})
                 </option>
               ))}
             </select>

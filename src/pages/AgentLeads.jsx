@@ -86,7 +86,7 @@ const AgentLeads = () => {
                 <option value="">-- Choose an Agent --</option>
                 {agents.map((agent) => (
                   <option key={agent._id} value={agent._id}>
-                    {agent.firstName} {agent.lastName} ({agent.company_name || 'Individual'})
+                    {agent.firstName} {agent.lastName} ({agent.company || 'Individual'})
                   </option>
                 ))}
               </select>

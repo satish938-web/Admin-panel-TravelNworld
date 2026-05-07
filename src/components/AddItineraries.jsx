@@ -476,7 +476,7 @@ const AddItineraries = ({ onSubmit, initialData = null }) => {
                       <option value="">— Choose Agent —</option>
                       {agents.map(a => (
                         <option key={a._id} value={a._id}>
-                          {a.company || `${a.firstName} ${a.lastName}`} ({a.email})
+                          {a.firstName} {a.lastName} ({a.company || 'Individual'}) - {a.email}
                         </option>
                       ))}
                     </select>
